@@ -17,7 +17,7 @@ import SendIcon from '@material-ui/icons/Send';
 import './css/Chatbot.css';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-import vid1 from '../assets/videos/sign2.mp4';
+import vid1 from '../assets/videos/ISL720.mp4';
 
 const Home = () => {
   const [chatbot, setChatbot] = useState(false);
