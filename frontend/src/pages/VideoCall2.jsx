@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import {Hands, HAND_CONNECTIONS} from '@mediapipe/hands';
+import * as myhands from '@mediapipe/hands';
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 
 import CallWrapper from '../components/CallWrapper';
@@ -69,7 +69,7 @@ function VideoCall2() {
         }
     }
     useEffect(() => {
-        hands = new Hands({
+        hands = new myhands.Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
 
@@ -89,7 +89,7 @@ function VideoCall2() {
 
             if (results.multiHandLandmarks) {
                 results.multiHandLandmarks.forEach((landmarks) => {
-                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
+                    drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
                     drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
                 });
             }
