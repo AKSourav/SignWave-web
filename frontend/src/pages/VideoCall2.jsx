@@ -23,6 +23,7 @@ function VideoCall2() {
     const [loading, setLoading] = useState(false);
     const [text, setText] = useState("")
     const [transformType, setTransformType] = useState('SIGN');
+    var aiSocket = null;
 
     const transformOptions = [
         { value: 'SIGN' },
@@ -61,39 +62,11 @@ function VideoCall2() {
     }
 
     const getPrediction = async (inputData) => {
-        const response = await fetch(DJANGO_URL + '/api/call', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ calldata: inputData })
-        })
-        const data = await response.json();
-        console.log("response: ", data)
-        const char = data['Response']
-        if (prevChar === char) {
-            if (counts <= THRESHOLD) {
-                // setCounts(prev => prev + 1);
-                counts++;
-            }
-            else {
-                // setCounts(0);
-                counts = 0;
-                prevChar = char;
-                setText((prev) => {
-                    if (char === "space") return prev + " ";
-                    else if (char === "del") return prev.slice(0, -1);
-                    return prev + data['Response'];
-                }
-                );
-            }
+        console.log("getPrediction:", aiSocket, inputData)
+        if(aiSocket)
+        {
+            aiSocket.send(JSON.stringify({ ...inputData }))
         }
-        else {
-            // setCounts(1);
-            counts = 1;
-            prevChar = char;
-        }
-        return char
     }
 
     // SIGN
@@ -111,50 +84,15 @@ function VideoCall2() {
 
     hands.onResults(async (results) => {
         try {
-            console.log("results", results);
-            var resultData = null
-            if (results.multiHandLandmarks.length > 0) {
-                resultData = await getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
-            }
-
             const canvas = canvasRef.current;
             const canvasCtx = canvas.getContext('2d');
             canvasCtx.save();
-
             // Clear the canvas to ensure transparency
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw landmarks if available
-            if (results.multiHandLandmarks) {
-                for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                    });
-
-                    drawLandmarks(canvasCtx, landmarks, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                        radius: 1,
-                    });
-                }
+            console.log("results", results);
+            if (results.multiHandLandmarks.length > 0) {
+                getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
             }
-            if (resultData) {
-                // Draw text on the canvas
-                canvasCtx.font = '20px Arial'; // Set the font size and type
-                canvasCtx.fillStyle = 'red';    // Set the text color
-                canvasCtx.textAlign = 'center'; // Set text alignment
-                canvasCtx.textBaseline = 'middle'; // Set text baseline
-
-                // Example text and position
-                const text = resultData;
-                const x = canvas.width / 2; // Centered horizontally
-                const y = canvas.height / 2; // Centered vertically
-
-                // Draw the text
-                canvasCtx.fillText(text, x, y);
-            }
-            canvasCtx.restore();
         }
         catch (err) {
             console.log("hands.onResults Error:", err)
@@ -259,6 +197,89 @@ function VideoCall2() {
 
 
     useEffect(() => {
+        const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'ws://localhost:8000/ws/ai/');
+        aiSocket= socket;
+
+        // socket.onopen = function () {
+        //     // Convert image to base64 and send
+        //     const image = /* your image here */;
+        //     const base64Image = btoa(image);
+        //     socket.send(JSON.stringify({ image: base64Image }));
+        // };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            console.log('WS Response:', data);
+            const multiHandLandmarks= data.multiHandLandmarks
+            const resultData = data.resultData
+            const char = resultData
+            if (prevChar === char) {
+                if (counts <= THRESHOLD) {
+                    // setCounts(prev => prev + 1);
+                    counts++;
+                }
+                else {
+                    // setCounts(0);
+                    counts = 0;
+                    prevChar = char;
+                    setText((prev) => {
+                        if (char === "space") return prev + " ";
+                        else if (char === "del") return prev.slice(0, -1);
+                        return prev + char;
+                    }
+                    );
+                }
+            }
+            else {
+                // setCounts(1);
+                counts = 1;
+                prevChar = char;
+            }
+
+            const canvas = canvasRef.current;
+            const canvasCtx = canvas.getContext('2d');
+            canvasCtx.save();
+
+            // Clear the canvas to ensure transparency
+            // canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw landmarks if available
+            if (multiHandLandmarks) {
+                for (const landmarks of multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                    });
+
+                    drawLandmarks(canvasCtx, landmarks, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                        radius: 1,
+                    });
+                }
+            }
+            if (resultData) {
+                // Draw text on the canvas
+                canvasCtx.font = '20px Arial'; // Set the font size and type
+                canvasCtx.fillStyle = 'red';    // Set the text color
+                canvasCtx.textAlign = 'center'; // Set text alignment
+                canvasCtx.textBaseline = 'middle'; // Set text baseline
+
+                // Example text and position
+                const text = resultData;
+                const x = canvas.width / 2; // Centered horizontally
+                const y = canvas.height / 2; // Centered vertically
+
+                // Draw the text
+                canvasCtx.fillText(text, x, y);
+            }
+            canvasCtx.restore();
+        };
+
+        socket.onerror = function (error) {
+            console.error('WebSocket Error:', error);
+        };
+
         fetchUsers();
         // setLoading(true);
         var SIGN_interval_id = null;
@@ -311,6 +332,7 @@ function VideoCall2() {
         return () => {
             if (SIGN_interval_id) clearInterval(SIGN_interval_id);
             if (SPEECH_interval_id) clearInterval(SPEECH_interval_id);
+            aiSocket= null;
         }
     }, [transformType]);
 
