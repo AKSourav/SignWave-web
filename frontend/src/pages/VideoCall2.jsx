@@ -72,8 +72,8 @@ function VideoCall2() {
     useEffect(() => {
     
         // Dynamically import the Mediapipe Hands module
-        import('@mediapipe/hands').then((myhands) => {
-          hands = new myhands.Hands({
+        import('@mediapipe/hands').then(({ Hands,  HAND_CONNECTIONS}) => {
+          hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
           });
     
@@ -94,7 +94,7 @@ function VideoCall2() {
             if (results.multiHandLandmarks) {
               results.multiHandLandmarks.forEach((landmarks) => {
                 import('@mediapipe/drawing_utils').then(({ drawConnectors, drawLandmarks }) => {
-                  drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
+                  drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
                   drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
                 });
               });

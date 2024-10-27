@@ -12,8 +12,6 @@ import Footer from '../components/Footer'
 import Navbar from '../components/Navbar';
 import { useState } from 'react';
 
-import { TextField, Button, List, ListItem, ListItemText, Paper, Typography } from '@material-ui/core';
-import SendIcon from '@material-ui/icons/Send';
 import './css/Chatbot.css';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -153,52 +151,6 @@ const Home = () => {
         </div>
 
       </main>
-
-
-      {
-        chatbot ?
-          <div className='chat-box'>
-            <div className="chatbot-container">
-              <Paper className="chat-window" elevation={3}>
-                <Typography variant="h5" className="chat-header">Chatbot<span className='close' onClick={() => setChatbot(false)}>X</span></Typography>
-                <List className="chat-messages">
-                  {messages.map((msg, index) => (
-                    <ListItem key={index} className={msg.sender === 'user' ? 'hi user-message' : 'bye bot-message'}>
-                      <ListItemText primary={msg.text} />
-                    </ListItem>
-                  ))}
-                </List>
-                <div className="chat-input">
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Type your message..."
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleSend}
-                    endIcon={<SendIcon />}
-                  >
-                    Send
-                  </Button>
-                </div>
-              </Paper>
-            </div>
-          </div>
-          :
-          <div className='chat-bt-btn' onClick={() => setChatbot(true)}>
-
-          </div>
-      }
-
-
-
-
-
       <Footer />
 
 
