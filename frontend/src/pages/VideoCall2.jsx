@@ -70,54 +70,41 @@ function VideoCall2() {
         }
     }
     useEffect(() => {
-        // Create Hands instance
-        hands = new myhands.Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-        });
     
-        // Configure Hands options
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7,
-        });
+        // Dynamically import the Mediapipe Hands module
+        import('@mediapipe/hands').then(({ Hands,  HAND_CONNECTIONS}) => {
+          hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+          });
     
-        // Define the onResults handler
-        hands.onResults(async (results) => {
-          try {
+          hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+          });
+    
+          hands.onResults((results) => {
             const canvas = canvasRef.current;
             if (!canvas) return;
     
             const canvasCtx = canvas.getContext('2d');
-            canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
     
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-              // Make sure to replace getPrediction with your actual prediction logic
-              getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
-    
-              for (const landmarks of results.multiHandLandmarks) {
-                drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
-                  color: 'lightgreen',
-                  lineWidth: 2,
+            if (results.multiHandLandmarks) {
+              results.multiHandLandmarks.forEach((landmarks) => {
+                import('@mediapipe/drawing_utils').then(({ drawConnectors, drawLandmarks }) => {
+                  drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
+                  drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
                 });
-                drawLandmarks(canvasCtx, landmarks, {
-                  color: 'lightgreen',
-                  lineWidth: 2,
-                  radius: 1,
-                });
-              }
+              });
             }
-            canvasCtx.restore();
-          } catch (err) {
-            console.log("hands.onResults Error:", err);
-          }
+          });
         });
     
-        // Cleanup on component unmount
+        // Cleanup function to release Hands instance on unmount
         return () => {
-            if (hands) hands.close();
+          if (hands) hands.close();
         };
       }, []);
     
