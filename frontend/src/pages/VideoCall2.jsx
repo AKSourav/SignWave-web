@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-// import * as myhands from '@mediapipe/hands';
+import {Hands, HAND_CONNECTIONS} from '@mediapipe/hands';
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 
 import CallWrapper from '../components/CallWrapper';
@@ -64,50 +64,45 @@ function VideoCall2() {
 
     const getPrediction = async (inputData) => {
         console.log("getPrediction:", aiSocket, inputData)
-        if(aiSocket)
-        {
+        if (aiSocket) {
             aiSocket.send(JSON.stringify({ ...inputData }))
         }
     }
     useEffect(() => {
-    
-        // Dynamically import the Mediapipe Hands module
-        import('@mediapipe/hands').then(({ Hands,  HAND_CONNECTIONS}) => {
-          hands = new Hands({
+        hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-          });
-    
-          hands.setOptions({
+        });
+
+        hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
             minDetectionConfidence: 0.7,
             minTrackingConfidence: 0.7,
-          });
-    
-          hands.onResults((results) => {
+        });
+
+        hands.onResults((results) => {
             const canvas = canvasRef.current;
             if (!canvas) return;
-    
+
             const canvasCtx = canvas.getContext('2d');
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
             if (results.multiHandLandmarks) {
-              results.multiHandLandmarks.forEach((landmarks) => {
-                import('@mediapipe/drawing_utils').then(({ drawConnectors, drawLandmarks }) => {
-                  drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
-                  drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
+                results.multiHandLandmarks.forEach((landmarks) => {
+                    import('@mediapipe/drawing_utils').then(({ drawConnectors, drawLandmarks }) => {
+                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
+                        drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
+                    });
                 });
-              });
             }
-          });
         });
-    
+
         // Cleanup function to release Hands instance on unmount
         return () => {
-          if (hands) hands.close();
+            if (hands) hands.close();
         };
-      }, []);
-    
+    }, []);
+
     // SIGN
 
 
@@ -207,7 +202,7 @@ function VideoCall2() {
 
     useEffect(() => {
         const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'wss://signwave-api.onrender.com/ws/ai/');
-        aiSocket= socket;
+        aiSocket = socket;
 
         // socket.onopen = function () {
         //     // Convert image to base64 and send
@@ -219,7 +214,7 @@ function VideoCall2() {
         socket.onmessage = function (event) {
             const data = JSON.parse(event.data);
             console.log('WS Response:', data);
-            const multiHandLandmarks= data.multiHandLandmarks
+            const multiHandLandmarks = data.multiHandLandmarks
             const resultData = data.resultData
             const char = resultData
             if (prevChar === char) {
@@ -340,7 +335,7 @@ function VideoCall2() {
         return () => {
             if (SIGN_interval_id) clearInterval(SIGN_interval_id);
             if (SPEECH_interval_id) clearInterval(SPEECH_interval_id);
-            aiSocket= null;
+            aiSocket = null;
         }
     }, [transformType]);
 
