@@ -5,7 +5,7 @@ const LiveAudioExtractor = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [intervalId, setIntervalId] = useState(null);
 
-    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || "http://localhost:8000"
+    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || "https://signwave-api.onrender.com"
 
     // useEffect(() => {
     //     // Cleanup when component unmounts

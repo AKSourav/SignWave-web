@@ -34,7 +34,7 @@ function VideoCall2() {
 
     var prevChar = null;
 
-    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || 'http://localhost:8000'
+    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || 'https://signwave-api.onrender.com'
 
     const [users, setUsers] = useState([]);
 
@@ -197,7 +197,7 @@ function VideoCall2() {
 
 
     useEffect(() => {
-        const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'ws://localhost:8000/ws/ai/');
+        const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'wss://signwave-api.onrender.com/ws/ai/');
         aiSocket= socket;
 
         // socket.onopen = function () {

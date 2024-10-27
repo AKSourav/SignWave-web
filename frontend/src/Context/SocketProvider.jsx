@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const SocketContext = createContext(null);
 
 
-const URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:80";
+const URL = import.meta.env.VITE_BACKEND_URL || "https://one-to-one-webrtc-latest.onrender.com/";
 
 const SocketProvider = ({ children }) => {
     const iceServers = {

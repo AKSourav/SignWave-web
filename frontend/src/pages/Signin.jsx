@@ -17,7 +17,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Remember me:", remember);
-    const response = await fetch(import.meta.env.VITE_DJANGO_URL+'/api/login', {
+    const response = await fetch('https://signwave-api.onrender.com'+'/api/login', {
       method: "POST",
       headers: {
         'Content-Type': "application/json",
