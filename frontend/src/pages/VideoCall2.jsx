@@ -92,6 +92,18 @@ function VideoCall2() {
             console.log("results", results);
             if (results.multiHandLandmarks.length > 0) {
                 getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                    });
+
+                    drawLandmarks(canvasCtx, landmarks, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                        radius: 1,
+                    });
+                }
             }
         }
         catch (err) {
@@ -244,20 +256,19 @@ function VideoCall2() {
             // canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Draw landmarks if available
-            if (multiHandLandmarks) {
-                for (const landmarks of multiHandLandmarks) {
-                    drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                    });
+            // if (multiHandLandmarks) {
+            //     for (const landmarks of multiHandLandmarks) {
+            //         drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
+            //             color: 'lightgreen',
+            //             lineWidth: 2,
+            //         });
 
-                    drawLandmarks(canvasCtx, landmarks, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                        radius: 1,
-                    });
-                }
-            }
+            //         drawLandmarks(canvasCtx, landmarks, {
+            //             color: 'lightgreen',
+            //             lineWidth: 2,
+            //             radius: 1,
+            //         });
+            // }
             if (resultData) {
                 // Draw text on the canvas
                 canvasCtx.font = '20px Arial'; // Set the font size and type
