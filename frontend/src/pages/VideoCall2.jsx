@@ -89,10 +89,8 @@ function VideoCall2() {
 
             if (results.multiHandLandmarks) {
                 results.multiHandLandmarks.forEach((landmarks) => {
-                    import('@mediapipe/drawing_utils').then(({ drawConnectors, drawLandmarks }) => {
-                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
-                        drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
-                    });
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'lightgreen', lineWidth: 2 });
+                    drawLandmarks(canvasCtx, landmarks, { color: 'lightgreen', radius: 1 });
                 });
             }
         });
