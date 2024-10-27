@@ -24,6 +24,7 @@ function VideoCall2() {
     const [text, setText] = useState("")
     const [transformType, setTransformType] = useState('SIGN');
     var aiSocket = null;
+    var hands = null;
 
     const transformOptions = [
         { value: 'SIGN' },
@@ -68,49 +69,58 @@ function VideoCall2() {
             aiSocket.send(JSON.stringify({ ...inputData }))
         }
     }
-
-    // SIGN
-    const hands = new myhands.Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-    });
-    // setLoading(false);
-
-    hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7,
-    });
-
-    hands.onResults(async (results) => {
-        try {
+    useEffect(() => {
+        // Create Hands instance
+        hands = new myhands.Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+    
+        // Configure Hands options
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.7,
+        });
+    
+        // Define the onResults handler
+        hands.onResults(async (results) => {
+          try {
             const canvas = canvasRef.current;
+            if (!canvas) return;
+    
             const canvasCtx = canvas.getContext('2d');
             canvasCtx.save();
-            // Clear the canvas to ensure transparency
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            console.log("results", results);
-            if (results.multiHandLandmarks.length > 0) {
-                getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
-                for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                    });
-
-                    drawLandmarks(canvasCtx, landmarks, {
-                        color: 'lightgreen',
-                        lineWidth: 2,
-                        radius: 1,
-                    });
-                }
+    
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+              // Make sure to replace getPrediction with your actual prediction logic
+              getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
+    
+              for (const landmarks of results.multiHandLandmarks) {
+                drawConnectors(canvasCtx, landmarks, myhands.HAND_CONNECTIONS, {
+                  color: 'lightgreen',
+                  lineWidth: 2,
+                });
+                drawLandmarks(canvasCtx, landmarks, {
+                  color: 'lightgreen',
+                  lineWidth: 2,
+                  radius: 1,
+                });
+              }
             }
-        }
-        catch (err) {
-            console.log("hands.onResults Error:", err)
-        }
-
-    });
+            canvasCtx.restore();
+          } catch (err) {
+            console.log("hands.onResults Error:", err);
+          }
+        });
+    
+        // Cleanup on component unmount
+        return () => {
+            if (hands) hands.close();
+        };
+      }, []);
+    
     // SIGN
 
 
