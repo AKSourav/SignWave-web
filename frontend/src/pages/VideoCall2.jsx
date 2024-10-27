@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import * as myhands from '@mediapipe/hands';
+import {Hands, HAND_CONNECTIONS} from '@mediapipe/hands';
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 
 import CallWrapper from '../components/CallWrapper';
@@ -71,7 +71,6 @@ function VideoCall2() {
     useEffect(() => {
         // Function to dynamically load the Hands library
         const loadHands = async () => {
-            const { Hands, HAND_CONNECTIONS } = await import('@mediapipe/hands');
             hands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
             });
