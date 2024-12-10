@@ -35,7 +35,7 @@ function VideoCall2() {
 
     var prevChar = null;
 
-    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || 'https://signwave-api.onrender.com'
+    const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || 'http://localhost:8000'
 
     const [users, setUsers] = useState([]);
 
@@ -68,50 +68,53 @@ function VideoCall2() {
             aiSocket.send(JSON.stringify({ ...inputData }))
         }
     }
-    useEffect(() => {
-        // Function to dynamically load the Hands library
-        const loadHands = async () => {
-            hands = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-            });
+    // useEffect(() => {
+    //     // Function to dynamically load the Hands library
+    //     const loadHands = async () => {
+    //         hands = new Hands({
+    //             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+    //         });
 
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7,
-            });
+    //         hands.setOptions({
+    //             maxNumHands: 1,
+    //             modelComplexity: 1,
+    //             minDetectionConfidence: 0.7,
+    //             minTrackingConfidence: 0.7,
+    //         });
 
-            hands.onResults((results) => {
-                const canvas = canvasRef.current;
-                const canvasCtx = canvas.getContext('2d');
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    //         hands.onResults((results) => {
+    //             const canvas = canvasRef.current;
+    //             const canvasCtx = canvas.getContext('2d');
+    //             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                if (results.multiHandLandmarks.length > 0) {
-                    // Assuming you have a function to handle the results
-                    getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
+    //             if (results.multiHandLandmarks.length > 0) {
+    //                 // Assuming you have a function to handle the results
+    //                 getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
 
-                    for (const landmarks of results.multiHandLandmarks) {
-                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-                            color: 'lightgreen',
-                            lineWidth: 2,
-                        });
+    //                 for (const landmarks of results.multiHandLandmarks) {
+    //                     drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+    //                         color: 'lightgreen',
+    //                         lineWidth: 2,
+    //                     });
 
-                        drawLandmarks(canvasCtx, landmarks, {
-                            color: 'lightgreen',
-                            lineWidth: 2,
-                            radius: 1,
-                        });
-                    }
-                }
-            });
+    //                     drawLandmarks(canvasCtx, landmarks, {
+    //                         color: 'lightgreen',
+    //                         lineWidth: 2,
+    //                         radius: 1,
+    //                     });
+    //                 }
+    //             }
+    //         });
 
-            // Add your input source (video or webcam)
-            // e.g., hands.send({ image: videoElement });
-        };
+    //         // Add your input source (video or webcam)
+    //         // e.g., hands.send({ image: videoElement });
+    //     };
 
-        loadHands();
-    }, []);
+    //     loadHands();
+    //     ()=>{
+    //         if(hands) hands.close();
+    //     }
+    // }, []);
 
     // SIGN
 
@@ -209,10 +212,49 @@ function VideoCall2() {
 
     // SPEECH
 
+    const loadHands = async () => {
+        hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
 
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+        });
+
+        hands.onResults((results) => {
+            const canvas = canvasRef.current;
+            const canvasCtx = canvas.getContext('2d');
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (results.multiHandLandmarks.length > 0) {
+                // Assuming you have a function to handle the results
+                getPrediction({ multiHandLandmarks: results.multiHandLandmarks });
+
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                    });
+
+                    drawLandmarks(canvasCtx, landmarks, {
+                        color: 'lightgreen',
+                        lineWidth: 2,
+                        radius: 1,
+                    });
+                }
+            }
+        });
+
+        // Add your input source (video or webcam)
+        // e.g., hands.send({ image: videoElement });
+    };
     useEffect(() => {
-        const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'wss://signwave-api.onrender.com/ws/ai/');
+        const socket = new WebSocket(import.meta.env.VITE_DJANGO_WEBSOCKET_URL || 'ws://localhost:9000/ws/ai/');
         aiSocket = socket;
+        loadHands();
 
         // socket.onopen = function () {
         //     // Convert image to base64 and send
@@ -345,6 +387,7 @@ function VideoCall2() {
         return () => {
             if (SIGN_interval_id) clearInterval(SIGN_interval_id);
             if (SPEECH_interval_id) clearInterval(SPEECH_interval_id);
+            if(hands) hands.close();
             aiSocket = null;
         }
     }, [transformType]);

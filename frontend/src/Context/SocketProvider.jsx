@@ -51,6 +51,7 @@ const SocketProvider = ({ children }) => {
         remoteVideoRef.current.srcObject = event.streams[0];
         remoteVideoRef.current.onloadedmetadata = () => {
             remoteVideoRef.current?.play();
+            console.log("Remote ref")
         }
     }
 

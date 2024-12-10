@@ -143,12 +143,12 @@ const Home = () => {
           </div>
         </div>
 
-        <div className='sih-sec-1'>
+        {/* <div className='sih-sec-1'>
           <h1 className='sih-sec-1-h1'>Real-Time <span>Sign Language</span> to Text Conversion</h1>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '70px' }}>
             <video className='promo1' src={vid1} autoPlay loop muted />
           </div>
-        </div>
+        </div> */}
 
       </main>
       <Footer />

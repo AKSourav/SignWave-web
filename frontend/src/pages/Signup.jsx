@@ -28,7 +28,7 @@ const SignupPage = () => {
       return;
     }
     console.log("import.meta.VITE_DJANGO_URL",import.meta.env.VITE_DJANGO_URL)
-    const response = await fetch('https://signwave-api.onrender.com'+'/api/signup', {
+    const response = await fetch('http://localhost:8000'+'/api/signup', {
       method: "POST",
       headers: {
         'Content-Type': "application/json",
