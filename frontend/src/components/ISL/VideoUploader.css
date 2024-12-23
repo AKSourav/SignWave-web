@@ -1,0 +1,39 @@
+.profile-gallery {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.add-gallery-img {
+    width: 100%;
+    height: 100%;
+}
+
+.add-in-gallery {
+    width: 37.3vw;
+    height: 34.5vh;
+    background-color: rgb(224, 224, 224);
+    border: 2px dashed #a0a0a0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.inp-video-field {
+    display: none;
+}
+
+@media(max-width:640px){
+    .add-in-gallery {
+        width: 74vw;
+        height: 34.5vh;
+        background-color: rgb(224, 224, 224);
+        border: 2px dashed #a0a0a0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}

@@ -1,0 +1,10 @@
+.fix-create-new-user {
+    color: red;
+    text-align: center;
+}
+
+.fix-create-new-user:hover {
+    cursor: pointer;
+    color: red;
+
+}

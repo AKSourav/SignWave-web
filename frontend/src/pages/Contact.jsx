@@ -8,14 +8,14 @@ const Contact = () => {
     <>
       <Navbar />
 
-      <div className="container-fluid mt-16">
+      <div className="container-fluid " style={{ paddingTop: '100px' }}>
         <div className="row justify-content-center text-center">
           <div className="col-12 col-md-12">
             <h1 ><span>-</span>Contact Us<span>-</span></h1>
             <p  >
               Explore Our Recent Creations, Demonstrating Our Commitment to Delivering Transformative Digital Solutions.
             </p>
-            <button type="button" className="btn btn-lg btn-primary mb-3 mb-md-4 mb-xl-5">Connect Now</button>
+            {/* <button type="button" className="btn btn-lg btn-primary mb-3 mb-md-4 mb-xl-5">Connect Now</button> */}
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@ const Contact = () => {
                 type="submit"
                 className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               >
-                Register new account
+                Submit
               </button>
             </div>
           </div>

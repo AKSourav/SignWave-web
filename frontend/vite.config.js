@@ -1,13 +1,12 @@
-// vite.config.js
-import { defineConfig } from 'vite';
-import { mediapipe } from 'vite-plugin-mediapipe';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
 
-import react from '@vitejs/plugin-react-swc';
-
-// default options
+// https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [
-		mediapipe(),
-    react()
-	]
-});
+  plugins: [react()],
+})
+
+
+import dotenv from "dotenv";
+dotenv.config();
+

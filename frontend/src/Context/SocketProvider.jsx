@@ -1,46 +1,56 @@
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import Notification from '../components/Notification';
 import { useNavigate } from 'react-router-dom';
+import { Notification, CallAlert} from './VCNotification';
 
+// Context Setup
 const SocketContext = createContext(null);
 
+// Constants
+const URL = import.meta.env.VITE_BACKEND_URL || "https://one-to-one-webrtc-latest.onrender.com/" || "http://localhost:80";
 
-const URL = import.meta.env.VITE_BACKEND_URL || "https://one-to-one-webrtc-latest.onrender.com/";
+const ICE_SERVERS = {
+    iceServers: [
+        { urls: "stun:stun.services.mozilla.com" },
+        { urls: "stun:stun.l.google.com:19302" },
+    ]
+};
 
+// Main Provider Component
 const SocketProvider = ({ children }) => {
-    const iceServers = {
-
-        iceServers: [
-            { urls: "stun:stun.services.mozilla.com" },
-            { urls: "stun:stun.l.google.com:19302" },
-        ]
-
-    }
-
+    // State
     const [userName, setUserName] = useState(localStorage.getItem("user"));
     const [remoteUserName, setRemoteUserName] = useState(null);
-    const [senderName, setSenderName] = useState(localStorage.getItem("user"));
+    const [senderName, setSenderName] = useState(null);
     const [notify, setNotify] = useState(false);
+    const [lobby, setLobby] = useState(false);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const navigate = useNavigate();
-
-
+    // Refs
     const localAudioTrack = useRef(null);
     const localVideoTrack = useRef(null);
-
-    const [lobby, setLobby] = useState(false);
     const remoteVideoTrack = useRef(null);
     const remoteAudioTrack = useRef(null);
     const remoteMediaStream = useRef(null);
     const localMediaStream = useRef(null);
     const remoteVideoRef = useRef();
     const localVideoRef = useRef();
+    const handTrackerRef = useRef(null);
+    const timeoutRef = useRef(null);
 
-    const handleUserName = (e) => {
-        setUserName(e.target.value);
-        localStorage.setItem('user', e.target.value);
-    }
+    // Initialize socket and peer connection
+    const socket = useMemo(() => io(URL), []);
+    var pc = useMemo(() => new RTCPeerConnection(ICE_SERVERS), []);
+
+    // Handlers
+    const handleUserName = useCallback((e) => {
+        const value = e.target.value;
+        setUserName(value);
+        localStorage.setItem('user', value);
+    }, []);
 
     const OnTrackFunction = (event) => {
         console.log("OnTrackFunction event:", event)
@@ -54,6 +64,39 @@ const SocketProvider = ({ children }) => {
             console.log("Remote ref")
         }
     }
+    const toggleVideo = useCallback(async () => {
+        try {
+            if (localVideoTrack.current) {
+                localVideoTrack.current.enabled = !localVideoTrack.current.enabled;
+                setIsVideoEnabled(localVideoTrack.current.enabled);
+
+                socket.emit('mediaStateChange', {
+                    type: 'video',
+                    enabled: localVideoTrack.current.enabled
+                });
+            }
+        } catch (error) {
+            console.error('Error toggling video:', error);
+        }
+    }, [socket]);
+
+    const toggleAudio = useCallback(() => {
+        try {
+            if (localAudioTrack.current) {
+                localAudioTrack.current.enabled = !localAudioTrack.current.enabled;
+                setIsAudioEnabled(localAudioTrack.current.enabled);
+
+                socket.emit('mediaStateChange', {
+                    type: 'audio',
+                    enabled: localAudioTrack.current.enabled
+                });
+            }
+        } catch (error) {
+            console.error('Error toggling audio:', error);
+        }
+    }, [socket]);
+
+
 
     const getCamAndPlay = useCallback(async () => {
         const stream = await window.navigator.mediaDevices.getUserMedia({
@@ -88,11 +131,6 @@ const SocketProvider = ({ children }) => {
         localVideoRef.current.play();
     }, [localVideoRef, localVideoRef.current])
 
-
-
-    // Initialize the socket inside the component using useMemo
-    const socket = useMemo(() => io(URL), []);
-    var pc = useMemo(() => new RTCPeerConnection(iceServers), []);
     var cancelCall;
 
     const connectUser = useCallback(() => {
@@ -104,6 +142,7 @@ const SocketProvider = ({ children }) => {
             connectUser();
         });
         socket.on("rejectCall", (canceledBy) => {
+            cleanup();
             setRemoteUserName(null);
             cancelCall = canceledBy;
         })
@@ -141,15 +180,15 @@ const SocketProvider = ({ children }) => {
         })
         socket.on("call", ({ senderName }) => {
             console.log(`call from ${senderName}`);
-            if (timeoutThread)
-                clearTimeout(timeoutThread);
+            if(timeoutRef.current) clearTimeout(timeoutRef.current);
             if (!lobby) {
-                timeoutThread = setTimeout(() => {
+                setSenderName(senderName);
+                setNotify(true);
+                timeoutRef.current = setTimeout(() => {
                     setNotify(false);
                     setSenderName(null);
-                }, 2000);
-                setNotify(true);
-                setSenderName(senderName);
+                    socket.emit('rejectCall',senderName);
+                }, 30000);
             }
         });
 
@@ -250,7 +289,7 @@ const SocketProvider = ({ children }) => {
                 //@ts-ignore
                 remoteVideoRef.current.play();
                 console.log("joiner remoteVideoRef.current:", remoteVideoRef.current, remoteVideoRef.current?.srcObject)
-            }, 1000)
+            }, 3000)
         });
 
         socket.on("answer", ({ sdp: remoteSdp }) => {
@@ -304,70 +343,82 @@ const SocketProvider = ({ children }) => {
         var lobby = false;
         console.log("call user:", receiverName, lobby, cancelCall, socket)
         setRemoteUserName(receiverName);
-        cancelCall = undefined;
-        const intervalThread = setInterval(() => {
-            if (lobby || (cancelCall && cancelCall === receiverName)) {
-                cancelCall = undefined;
-                clearInterval(intervalThread);
-                return;
-            }
-            socket.emit("call", receiverName);
-        }, 1000);
-        setTimeout(() => {
-            clearInterval(intervalThread);
-        }, 10000)
+        socket.emit('call',receiverName)
     }
     const handleAcceptCall = async (senderName) => {
         setRemoteUserName(senderName);
         await getCamAndPlay();
-        console.log("gjdg")
+        console.log("Call Accepted")
         socket.emit('answerCall', senderName);
     }
     const handleRejectCall = async (senderName) => {
         setUserName(null);
-        console.log("gjdg")
+        console.log("Reject Call")
         socket.emit('rejectCall', senderName);
     }
 
     useEffect(() => {
         initSockets();
     }, []);
+    const navigate = useNavigate();
+
+    const contextValue = {
+        socket,
+        localAudioTrack,
+        localVideoTrack,
+        localMediaStream,
+        getCamAndPlay,
+        pc,
+        callUser,
+        remoteVideoRef,
+        localVideoRef,
+        remoteUserName,
+        handleUserName,
+        setUserName,
+        toggleVideo,
+        toggleAudio,
+        isVideoEnabled,
+        isAudioEnabled,
+        handTrackerRef,
+        isLoading,
+        setIsLoading,
+        error,
+        setError,
+        notify,
+        senderName,
+        connectUser
+    };
 
     return (
-        //@ts-ignore
-        <SocketContext.Provider value={{ socket, localAudioTrack, localVideoTrack, getCamAndPlay, pc, callUser, remoteVideoRef, localVideoRef, remoteUserName, handleUserName }}>
-            <>
-                {notify && !remoteUserName && <Notification>
-                    <div className="w-[250px] h-[150px] bg-white rounded-lg shadow-lg p-4 flex flex-col justify-between">
-                        <h4 className="text-gray-800 font-semibold mb-3">Call from {senderName}</h4>
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => {
-                                    handleAcceptCall(senderName)
-                                    navigate('/call')
-                                }}
-                                className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition duration-150"
-                            >
-                                Accept
-                            </button>
-                            <button
-                                onClick={() => handleRejectCall(senderName)}
-                                className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition duration-150"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
+        <SocketContext.Provider value={contextValue}>
+            <Notification isVisible={notify}>
+                <CallAlert
+                    senderName={senderName}
+                    onAccept={() => {
+                        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                        handleAcceptCall(senderName);
+                        setNotify(false);
+                        navigate('/call');
+                    }}
+                    onReject={() => {
+                        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                        handleRejectCall(senderName);
+                        setNotify(false);
+                    }}
+                />
+            </Notification>
 
-                </Notification>}
-                {children}
-            </>
+            <Notification isVisible={error !== null}>
+                <div className="text-red-400">
+                    {error}
+                </div>
+            </Notification>
+
+            {children}
         </SocketContext.Provider>
     );
-}
+};
 
-export const useSocket = () => {
-    return useContext(SocketContext);
-}
+const useSocket = () => useContext(SocketContext);
 
-export default SocketProvider;
+export { useSocket, SocketProvider };

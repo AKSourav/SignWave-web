@@ -8,28 +8,10 @@ import * as handpose from "@tensorflow-models/handpose";
 import { drawHand } from "../utils/canvas";
 import CallWrapper from '../components/CallWrapper';
 
-
-//experimental
-// import * as fp from "fingerpose"
-// import Handsigns from "../components/handsigns"
-//experimental
-
 const VideoCall = () => {
     var socketContext = useSocket();
     const canvasRef = useRef(null);
     const [receiverName, setReceiverName] = useState(null);
-
-    const getPrediction= async (inputData)=>{
-        var response = await fetch('http://localhost:8000/api/call', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: inputData
-        })
-        response=response.json()
-        console.log("response: ",response);
-    }
 
     const runHandpose = async () => {
         console.log(tf.getBackend()); // Check the current backend
@@ -64,70 +46,19 @@ const VideoCall = () => {
 
             // Set video width
             //@ts-ignore
-            // socketContext.remoteVideoRef.current.width = videoWidth;
+            socketContext.remoteVideoRef.current.width = videoWidth;
             //@ts-ignore
-            // socketContext.remoteVideoRef.current.height = videoHeight;
+            socketContext.remoteVideoRef.current.height = videoHeight;
 
             // Set canvas height and width
             //@ts-ignore
-            // canvasRef.current.width = videoWidth;
+            canvasRef.current.width = videoWidth;
             //@ts-ignore
-            // canvasRef.current.height = videoHeight;
+            canvasRef.current.height = videoHeight;
 
             // Make Detections
             const hand = await net.estimateHands(video);
-            getPrediction(hand)
-            console.log("result:",hand);
-
-
-            // experimental
-            // if (hand.length > 0) {
-            //     // Initialize fingerpose estimator
-            //     const gestureEstimator = new fp.GestureEstimator([
-            //         fp.Gestures.ThumbsUpGesture,
-            //         Handsigns.aSign,
-            //         Handsigns.bSign,
-            //         Handsigns.cSign,
-            //         Handsigns.dSign,
-            //         Handsigns.eSign,
-            //         Handsigns.fSign,
-            //         Handsigns.gSign,
-            //         Handsigns.hSign,
-            //         Handsigns.iSign,
-            //         Handsigns.jSign,
-            //         Handsigns.kSign,
-            //         Handsigns.lSign,
-            //         Handsigns.mSign,
-            //         Handsigns.nSign,
-            //         Handsigns.oSign,
-            //         Handsigns.pSign,
-            //         Handsigns.qSign,
-            //         Handsigns.rSign,
-            //         Handsigns.sSign,
-            //         Handsigns.tSign,
-            //         Handsigns.uSign,
-            //         Handsigns.vSign,
-            //         Handsigns.wSign,
-            //         Handsigns.xSign,
-            //         Handsigns.ySign,
-            //         Handsigns.zSign,
-            //       ]);
-
-            //     const gesturePrediction = gestureEstimator.estimate(hand[0].landmarks, 7.5); // Higher confidence threshold
-
-            //     if (gesturePrediction.gestures.length > 0) {
-            //         const bestGesture = gesturePrediction.gestures.reduce((prev, current) => {
-            //             return prev.confidence > current.confidence ? prev : current;
-            //         });
-            //         console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",bestGesture.name)
-            //         // setGesture(bestGesture.name); // Update detected gesture
-            //     }
-
-            //     // Draw mesh on canvas
-            //     const ctx = canvasRef?.current.getContext("2d");
-            //     ctx.clearRect(0, 0, canvasRef?.current.width, canvasRef?.current.height);
-            //     drawHand(hand, ctx);
-            // }
+            // console.log(hand);
 
             // Draw mesh
             //@ts-ignore

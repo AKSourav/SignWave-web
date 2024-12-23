@@ -14,6 +14,7 @@ const styles = {
         position: 'fixed',
         bottom: '20px',
         right: '20px',
+        backgroundColor: 'black',
         color: 'white',
         padding: '10px',
         borderRadius: '5px',

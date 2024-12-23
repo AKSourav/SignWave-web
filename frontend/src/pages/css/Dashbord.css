@@ -1,0 +1,65 @@
+.dash-page {
+    padding-top: 5vh;
+    height: 100vh;
+    display: flex;
+}
+
+
+.dash-menu {
+    height: 100%;
+    width: 230px;
+    padding-top: 30px;
+    background-color: #b3b3b3;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-left: 10px;
+    cursor: pointer;
+}
+
+.dash-menu-col {
+    width: 75px;
+    height: 100%;
+    padding-top: 30px;
+    background-color: #b6b6b6;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-left: 10px;
+    cursor: pointer;
+}
+
+
+.dash-menu-set {
+    display: flex;
+    gap: 10px;
+}
+
+.dash-hide {
+    display: none;
+}
+
+.dash-cont {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    width: 100%;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.log-out-btn {
+    margin-left: 10px;
+    width: 160px;
+}
+
+@media(max-width:640px) {
+    .dash-menu {
+        display: none;
+    }
+
+    .dash-hide {
+        display: none;
+    }
+}

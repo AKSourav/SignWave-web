@@ -11,69 +11,29 @@ import './css/Home.css'
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar';
 import { useState } from 'react';
-
-import './css/Chatbot.css';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-import vid1 from '../assets/videos/ISL720.mp4';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const [chatbot, setChatbot] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-
-  const genAI = new GoogleGenerativeAI("AIzaSyDaRdtEvlTcjVRscdEW4LNptRkRx3_EVL0");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const getResponseForGivenPrompt = async ({ text }) => {
-    try {
-
-      const prompt = text + "in 30 words";
-      return await model.generateContent(prompt).then(res => res.response.text())
-    }
-    catch (error) {
-      return "server down"
-    }
-  }
-
-  const handleSend = async () => {
-    if (input.trim() !== '') {
-      const userMessage = { text: input, sender: 'user' };
-      setMessages([...messages, userMessage]);
-      try {
-        const massage = await getResponseForGivenPrompt(userMessage);
-        const botMessage = { text: massage, sender: 'bot' };
-        setMessages(prevMessages => [...prevMessages, botMessage]);
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-
-      setInput('');
-    }
-  };
-
-
-
-
-
+  /*const [chatbot, setChatbot] = useState(false);*/
+  const navigate = useNavigate();
   return (
     <>
       <Navbar />
-      <main>
+      <main style={{ width: '100%' }}>
         <div
           className="h-screen bg-cover bg-no-repeat flex items-center justify-center opacity-85 text-white"
           style={{
-            backgroundImage: `url('https://cdn.pixabay.com/photo/2016/06/25/12/52/laptop-1478822_1280.jpg')`,
+            backgroundImage: `url('https://cdn.pixabay.com/photo/2016/06/25/12/52/laptop-1478822_1280.jpg')`
           }}
         >
 
-          <div>
+          <div style={{ padding: '50px' }}>
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold">
-              Welcome to <span className="text-blue-400">SignSpeak</span>
+              Welcome to <span className="text-blue-400">SignWave</span>
             </h2>
             <div className="ani-under"></div>
             <h5 className="text-lg md:text-xl">
-              Join with <span>Next Gen</span> Video conferencing app.
-            </h5>
+              Empowering Education Through <span>Real-Time</span> Indian Sign Language Translation and Recognition. </h5>
             <h5 className="text-lg md:text-xl">
               Come with us and experience the world beyond your <span>Imagination</span>
             </h5>
@@ -81,10 +41,61 @@ const Home = () => {
 
         </div>
 
+        <header className="w-full bg-blue-500 text-white py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-4xl md:text-5xl font-bold">
+              <b>SignWave</b> has been developed with the objective of helping everyone to learn ISL.
+            </h2>
 
+            <button onClick={() => navigate('/dash')} className="mt-6 px-8 py-3 bg-white text-blue-500 font-semibold rounded-lg shadow-lg hover:bg-gray-100">
+              Get Started
+            </button>
+          </div>
+        </header>
 
-        <div className='home-sec-2'>
-          <div className='ani-sec-2-1'><h1 style={{ textAlign: 'center', fontFamily: 'sans-serif', fontWeight: '700' }}>Purpose <span style={{ fontSize: '60px', color: '#4ff37e' }}>&</span> Introduction</h1></div>
+        {/* Features Section */}
+        <section className="py-16 bg-gray-100">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold text-gray-800 mb-8">Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <i className="fas fa-microphone-alt text-blue-500 text-4xl"></i>
+                <h3 className="mt-4 text-xl font-bold text-gray-800">Speech-to-ISL</h3>
+                <p className="mt-2 text-gray-600">
+                  Convert spoken words into Indian Sign Language in <b>real time</b>.
+                </p>
+              </div>
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <i className="fas fa-language text-green-500 text-4xl"></i>
+                <h3 className="mt-4 text-xl font-bold text-gray-800">Text-to-ISL</h3>
+                <p className="mt-2 text-gray-600">
+                  Translate written text into ISL <b>Gestures and Visuals</b>.
+                </p>
+              </div>
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <i className="fas fa-hands text-red-500 text-4xl"></i>
+                <h3 className="mt-4 text-xl font-bold text-gray-800">ISL-to-Recognition</h3>
+                <p className="mt-2 text-gray-600">
+                  <b>Recognize</b> and Process ISL gestures into text in <b>real time</b>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className="py-16 bg-blue-500 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold">Start Using ISL Translator Today!!</h2>
+
+            <button onClick={() => navigate('/signup')} className="mt-6 px-8 py-3 bg-white text-blue-500 font-semibold rounded-lg shadow-lg hover:bg-gray-100">
+              Sign Up Now
+            </button>
+          </div>
+        </section>
+
+        {/* <div className='home-sec-2'>
+          <div className='ani-sec-2-1'><h1 className='midea-1' style={{ textAlign: 'center', fontFamily: 'sans-serif', fontWeight: '700' }}>Purpose <span className='midea-2' style={{ fontSize: '60px', color: '#4ff37e' }}>&</span> Introduction</h1></div>
           <div className="ani-under2"></div>
           <div style={{ width: '70vw', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className='sec-2-text' style={{ paddingTop: '30px' }}>
@@ -99,17 +110,17 @@ const Home = () => {
               <p>
                 The video conferencing app designed to bridge communication for individuals who use sign language.
                 Whether you are connecting with friends, family, or colleagues, our platform ensures that everyone can communicate effectively
-                and naturally. With a focus on accessibility and inclusivity, SignSpeak offers a seamless video experience tailored to the
+                and naturally. With a focus on accessibility and inclusivity, SignWave offers a seamless video experience tailored to the
                 unique needs of the sign language community. Join us in creating a space where communication is barrier-free, and every
                 conversation is clear, personal, and meaningful.
               </p>
             </div>
           </div>
         </div>
-        <div className='home-sec-3'>
-          <div className='ani-sec-3-1'><h1 style={{ textAlign: 'center', fontFamily: 'sans-serif', fontWeight: '700' }}><span style={{ fontSize: '60px', color: '#4ff37e' }}>F</span>eatures</h1></div>
+        <div className='home-sec-3' style={{ display: 'flex' }}>
+          <div className='ani-sec-3-1'><h1 className='midea-1' style={{ textAlign: 'center', fontFamily: 'sans-serif', fontWeight: '700' }}><span style={{ fontSize: '60px', color: '#4ff37e' }}>F</span>eatures</h1></div>
           <div className="ani-under3"></div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '70px' }}>
+          <div className="midea-3" style={{ display: 'flex', justifyContent: 'center', gap: '70px' }}>
             <div className='bubble bubble1'>
               <div className='in-bubble'>
                 <h4 className='in-bubble-h4'>ISL Video <br />to <br />Text</h4>
@@ -141,16 +152,19 @@ const Home = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* <div className='sih-sec-1'>
-          <h1 className='sih-sec-1-h1'>Real-Time <span>Sign Language</span> to Text Conversion</h1>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '70px' }}>
-            <video className='promo1' src={vid1} autoPlay loop muted />
-          </div>
         </div> */}
 
       </main>
+
+
+      {/* {
+        chatbot ? <div className='chat-box'><div style={{ width: '30px', height: '30px', backgroundColor: 'red' }} onClick={() => setChatbot(false)}>x</div></div> : <div className='chat-bt-btn' onClick={() => setChatbot(true)}></div>
+      } */}
+
+
+
+
+
       <Footer />
 
 
@@ -160,5 +174,3 @@ const Home = () => {
 }
 
 export default Home;
-
-

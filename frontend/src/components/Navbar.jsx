@@ -14,7 +14,7 @@ const Navbar = () => {
 
 
   return (
-    <nav className="bg-gray-800 text-white fixed top-0 left-0 w-full z-50 ">
+    <nav className="bg-gray-800 text-white fixed z-50 " style={{ width: '100%' }}>
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
         <div className="relative flex items-center justify-between h-16">
           <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -94,20 +94,7 @@ const Navbar = () => {
                 >
                   Contact
                 </Link>
-                {localStorage.getItem('user') &&<Link
-                  to="/call"
-                  className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Call
-                </Link>}
-                {localStorage.getItem('user') ?<button className='className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-150'
-                 onClick={()=>{
-                  localStorage.removeItem('user');
-                  location.replace('/signin');
-                 }}
-                >
-                  Log Out
-                </button> :<><Link
+                <Link
                   to="/signin"
                   className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                 >
@@ -118,7 +105,7 @@ const Navbar = () => {
                   className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Signup
-                </Link></>}
+                </Link>
               </div>
             </div>
 

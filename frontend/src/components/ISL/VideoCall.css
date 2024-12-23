@@ -1,0 +1,66 @@
+.sender-video{
+    position: absolute;
+    background-color: rgb(255, 255, 255);
+    top: 0px;
+    width: 20vw;
+    height: 31vh;
+    margin-right: 12vw;
+}
+
+.overlay-video-call-right{
+    width: 100%;
+    position: absolute;
+    top: 58vh;
+    left: 0%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.overlay-video-call-left{
+    width: 100%;
+    position: absolute;
+    top: 58vh;
+    left: -17%;
+    display: flex;
+    justify-content: space-between;
+    padding-right: 130px;
+}
+
+.call-menu{
+    margin-left: 10vw;
+    width:50vw;
+    display: flex;
+    justify-content: center;
+    align-items: end;
+    gap:30px;
+    padding-left: 200px;
+}
+
+.field-off{
+    display: none;
+}
+
+.field-on{
+    width: 30vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 20px;
+    background-color: aliceblue;
+}
+
+.riciver-video-right{
+    position: relative;
+    background-color: black;
+    border-radius: 10px;
+    width: 80vw;
+    height: 85vh;
+}
+
+.riciver-video-left{
+    position: relative;
+    width: 60vw;
+    height: 85vh;
+    background-color: black;
+    border-radius: 10px;
+}

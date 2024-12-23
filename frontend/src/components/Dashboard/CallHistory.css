@@ -1,0 +1,61 @@
+.tour-data-table{
+    width: 100%;
+}
+
+.callHistory-pop-up{
+    width: 40vw;
+    height: 50vh;
+    background-color: rgb(214, 214, 214);
+    position: absolute;
+    top: 60%;
+    left: 55%;
+    transform: translate(-50%,-50%);
+    
+    border-radius: 10px;
+    box-shadow: 0px 0px 200px 10px rgb(123, 123, 123);
+    border: 2px solid rgb(255, 255, 255);
+}
+.call-history-popup-box{
+    padding-top:40px ;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.update-popup{
+    width: 100px;
+    height: 35px;
+    border-radius: 10px;
+    background-color: #0299c3;
+    font-weight:700;
+    color: white;
+}
+
+.update-popup:hover{
+    background-color: #12bd8a;
+}
+
+.call-history-table{
+    background-color: #0299c3;
+    padding: 10px;
+    height: 100%;
+}
+
+.call-history-table th{
+    background-color: #12bd8a;
+    height: 10vh;
+    border: 1px solid black;
+    text-align: center;
+}
+
+.call-history-table td{
+    height: 5vh;
+    border: 1px solid black;
+    padding-left: 20px;
+}
+
+.scrolling-tbody{
+    overflow-x: scroll;
+    background-color: aliceblue;
+}

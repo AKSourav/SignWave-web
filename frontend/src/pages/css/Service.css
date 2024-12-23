@@ -1,17 +1,184 @@
 /* Ensure you include this file in your project */
 .card-img {
-    height: 200px; /* Set a fixed height for images */
-    width: 100%; /* Ensure images take up the full width of the column */
-    object-fit: cover; /* Ensure images cover the area without distortion */
-  }
-  
-  .card-text {
-    white-space: normal; /* Ensure text wraps properly */
-    overflow: hidden; /* Hide overflow text if any */
-    text-overflow: ellipsis; /* Show ellipsis for overflowed text */
-  }
-  
-  /* Optional: Adjust the height of the card */
-  .card {
-    height: 100%; /* Full height */
-  }
+  height: 200px;
+  /* Set a fixed height for images */
+  width: 100%;
+  /* Ensure images take up the full width of the column */
+  object-fit: cover;
+  /* Ensure images cover the area without distortion */
+}
+
+.card-text {
+  white-space: normal;
+  /* Ensure text wraps properly */
+  overflow: hidden;
+  /* Hide overflow text if any */
+  text-overflow: ellipsis;
+  /* Show ellipsis for overflowed text */
+}
+
+/* Optional: Adjust the height of the card */
+.card {
+  height: 100%;
+}
+
+/* General Styling */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: #f4f9fd;
+  color: #333;
+}
+
+.service-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header Styling */
+.service-header {
+  background: #007acc;
+  color: #fff;
+  text-align: center;
+  padding: 30px 20px;
+  border-radius: 10px;
+}
+
+.service-header h1 {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.service-header p {
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+/* Introduction Section */
+.introduction-section {
+  margin: 30px 0;
+  padding: 20px;
+  background: #e6f7ff;
+  border-radius: 10px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.introduction-section h2 {
+  font-size: 2rem;
+  color: #007acc;
+}
+
+.introduction-section p {
+  font-size: 1rem;
+  color: #555;
+}
+
+/* Service Section */
+.service-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.service-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  width: 300px;
+  padding: 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.service-card h3 {
+  font-size: 1.5rem;
+  color: #007acc;
+}
+
+.service-card p {
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Features Section */
+.features-section {
+  margin: 30px 0;
+  text-align: left;
+}
+
+.features-section h2 {
+  font-size: 2rem;
+  color: #007acc;
+}
+
+.features-section ul {
+  list-style: disc;
+  padding-left: 40px;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* Testimonials Section */
+.testimonials-section {
+  margin: 30px 0;
+  background: #e6f7ff;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.testimonials-section h2 {
+  font-size: 2rem;
+  color: #007acc;
+}
+
+.testimonials-section blockquote {
+  font-size: 1rem;
+  color: #555;
+  margin: 10px 0;
+  padding-left: 20px;
+  border-left: 4px solid #007acc;
+}
+
+/* Footer */
+.service-footer {
+  text-align: center;
+  margin: 30px 0;
+  padding: 20px;
+  background: #007acc;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.service-footer h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.service-footer p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.service-contact-button {
+  background: #ff6600;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.service-contact-button:hover {
+  background: #cc5200;
+}
