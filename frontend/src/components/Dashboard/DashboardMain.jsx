@@ -1,127 +1,81 @@
-import './DashboardMain.css'; // Optional: Add your own styles here
+import './DashboardMain.css'; // Your CSS file for additional styles
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHandsBubbles, faFilePen, faCamera, faMicrophoneLines } from '@fortawesome/free-solid-svg-icons';
-import { useContext, useEffect, useState } from 'react';
-import axios from "axios";
+import { faHandsBubbles, faFilePen, faCamera, faMicrophoneLines, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { useContext, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { PageContext } from '../../App';
-import { useSocket } from '../../Context/SocketProvider';
+
 const DashboardMain = () => {
   const navigate = useNavigate();
-  const [callHistory, setCallHistory] = useState([]);
-  const [error, setError] = useState("");
-
-  const { callUser } = useSocket();
   const { setPage } = useContext(PageContext);
-  const fetchCallHistory = async () => {
-    try {
-      const token = localStorage.getItem("token"); // Replace with your token retrieval logic
-      const response = await axios.get(
-        "https://signwave-api-ydf3.onrender.com/api/create_call",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setCallHistory(response.data); // Assuming the response contains an array of callHistory
-      console.log(response.data);
-    } catch (err) {
-      console.error("Error fetching callHistory history:", err);
-      setError(err.response?.data?.message || "Failed to fetch callHistory history");
-      console.log(error)
+
+  // Service cards data
+  const serviceCards = [
+    {
+      id: 11,
+      title: "Speech To SL",
+      icon1: faMicrophoneLines,
+      icon2: faHandsBubbles,
+      description: "Convert spoken language to Indian Sign Language",
+    },
+    {
+      id: 12,
+      title: "Text To SL",
+      icon1: faFilePen,
+      icon2: faHandsBubbles,
+      description: "Convert written text to Indian Sign Language",
+    },
+    // {
+    //   id: 13,
+    //   title: "SL To Speech",
+    //   icon1: faHandsBubbles,
+    //   icon2: faMicrophoneLines,
+    //   description: "Convert Indian Sign Language to spoken language",
+    // },
+    {
+      id: 'SLtext',
+      title: "SL To Text",
+      icon1: faHandsBubbles,
+      icon2: faFilePen,
+      description: "Convert Indian Sign Language to written text",
+      isNavigate: true,
     }
-  };
-
-  useEffect(() => {
-    fetchCallHistory();
-  }, []);
-
-
-  const caling = (dialer) => {
-    callUser(dialer);
-    navigate(`/call`);
-
-  }
-
+  ];
 
   return (
-    <div className="welcome-card">
+    <div className="dashboard-container bg-gray-100 p-6 min-h-screen">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Sign Language Services</h1>
+          <p className="text-gray-600">Select a service to begin your sign language conversion</p>
+        </header>
 
-
-      <div className="card-row-1">
-        <div className="bg-white shadow-md rounded-lg p-4">
-          <h3 className="text-xl font-bold mb-2">Card Title 1</h3>
-          <p className="text-gray-600">This is a simple card description.</p>
-        </div>
-        <div className="bg-white shadow-md rounded-lg p-4">
-          <h3 className="text-xl font-bold mb-2">Card Title 2</h3>
-          <p className="text-gray-600">This is another card description.</p>
-        </div>
-        <div className="bg-white shadow-md rounded-lg p-4">
-          <h3 className="text-xl font-bold mb-2">Card Title 3</h3>
-          <p className="text-gray-600">This is yet another card description.</p>
-        </div>
-      </div>
-
-
-
-
-      <div className='work-menu' style={{ display: 'flex' }}>
-        <div className="task-menu">
-          <div className="bg-white shadow-md rounded-lg p-3" onClick={() => setPage(11)}>
-            <h3 className="font-bold mb-2 text-controller"><FontAwesomeIcon icon={faMicrophoneLines} /> Speech To ISL <FontAwesomeIcon icon={faHandsBubbles} />
-            </h3>
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-3" onClick={() => setPage(12)}>
-            <h3 className="font-bold mb-2 text-controller"><FontAwesomeIcon icon={faFilePen} /> Text To ISL <FontAwesomeIcon icon={faHandsBubbles} /></h3>
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-3" onClick={() => setPage(13)}>
-            <h3 className="font-bold mb-2 text-controller"> <FontAwesomeIcon icon={faHandsBubbles} /> ISL To  Speech <FontAwesomeIcon icon={faMicrophoneLines} /></h3>
-          </div>
-
-          <div className="bg-white shadow-md rounded-lg p-3" onClick={() => navigate('/isltext')}>
-            <h3 className="font-bold mb-2 text-controller"><FontAwesomeIcon icon={faHandsBubbles} /> ISL To Text <FontAwesomeIcon icon={faFilePen} /></h3>
-          </div>
-          {/*
-          <div className="bg-white shadow-md rounded-lg p-3">
-            <h3 className="font-bold mb-2 text-controller"><FontAwesomeIcon icon={faCamera} /> Live Video Translator</h3>
-          </div>
-          */}
-        </div>
-        <div className='res-call-list' style={{ flex: '3', paddingRight: '60px' }}>
-          <h3 style={{ color: 'white', paddingTop: '30px', textAlign: 'center' }}>Friend List</h3>
-          <div className='current-call-list'>
-            {
-              callHistory.map(item => {
-                return <div key={item.id} className='item-lists'>
-                  <div style={{ display: 'flex' }}>
-                    <img src='https://up.yimg.com/ib/th?id=OIP.GqGVPkLpUlSo5SmeDogUdwHaHa&pid=Api&rs=1&c=1&qlt=95&w=104&h=104' width={50} height={40} style={{ borderRadius: '50%', marginLeft: '30px' }} />
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <h5 style={{ display: 'inline' }}>{item.receiver}</h5>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {serviceCards.map((card) => (
+            <div 
+              key={card.id}
+              className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+              onClick={() => card.isNavigate ? navigate(`/${card.id}`) : setPage(card.id)}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2 text-xl text-gray-800 font-semibold">
+                    <FontAwesomeIcon icon={card.icon1} className="text-blue-600" />
+                    <span>{card.title}</span>
+                    <FontAwesomeIcon icon={card.icon2} className="text-blue-600" />
                   </div>
-                  <div style={{ display: 'flex', gap: '20px', paddingRight: '20px' }}>
-                    <button className='join-btn' onClick={() => caling(item.receiver)}>join</button>
-                  </div>
+                  <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 group-hover:text-blue-600" />
                 </div>
-              })
-            }
-          </div>
+                <p className="text-gray-600">{card.description}</p>
+              </div>
+              <div className="bg-blue-50 px-6 py-3 border-t border-gray-100">
+                <span className="text-sm text-blue-600 font-medium">Click to start</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-
-
-
-
-
-
-
-
-
-
-
-    </div >
+    </div>
   );
 };
 

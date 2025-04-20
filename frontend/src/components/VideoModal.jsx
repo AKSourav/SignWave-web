@@ -3,7 +3,7 @@ import Modal from './Modal';
 
 const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [currentVideo, setCurrentVideo] = useState('');
+  const [currentVideo, setCurrentVideo] = useState(null);
   const [videoQueue, setVideoQueue] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [failedVideos, setFailedVideos] = useState(new Set());
@@ -11,27 +11,32 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextContent, setNextContent] = useState(null);
 
+  // Reset state when modal opens or words change
   useEffect(() => {
-    if (words && words.length > 0) {
+    if (isOpen && words && words.length > 0) {
+      setCurrentVideoIndex(0);
+      setFailedVideos(new Set());
       generateVideoQueue();
     }
-  }, [words]);
-
-  useEffect(() => {
+    
+    // Cleanup function to clear timers when component unmounts
     return () => {
       if (imageTimer) {
         clearTimeout(imageTimer);
       }
     };
-  }, [imageTimer]);
+  }, [isOpen, words]);
 
   const generateVideoQueue = () => {
     setIsLoading(true);
     let queue = [];
 
     for (const word of words) {
-      const wordUrl = `https://signwave-sih.s3.ap-south-1.amazonaws.com/output_word/${word.toLowerCase()}.mp4`;
-      queue.push({ url: wordUrl, type: 'word', original: word });
+      // Make sure word is always defined before attempting toLowerCase()
+      if (word) {
+        const wordUrl = `https://finalyearproject123.blob.core.windows.net/container1/output_word/${word.toLowerCase()}.mp4`;
+        queue.push({ url: wordUrl, type: 'word', original: word });
+      }
     }
 
     setVideoQueue(queue);
@@ -42,6 +47,8 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
   };
 
   const handleTransition = (nextItem) => {
+    if (!nextItem) return;
+    
     setIsTransitioning(true);
     setNextContent(nextItem);
     
@@ -56,20 +63,27 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
     }, 300);
   };
 
-  const handleVideoError = async (error) => {
-    console.error('Video playback error:', error);
-
+  const handleVideoError = () => {
     const currentItem = videoQueue[currentVideoIndex];
-    if (currentItem.type === 'word' && !failedVideos.has(currentItem.url)) {
-      setFailedVideos(prev => new Set(prev).add(currentItem.url));
+    if (!currentItem) return handleVideoEnd();
 
+    if (currentItem.type === 'word' && !failedVideos.has(currentItem.url)) {
+      // Add the failed video URL to the set
+      setFailedVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.add(currentItem.url);
+        return newSet;
+      });
+
+      // Split word into letters and create image URLs
       const letters = currentItem.original.split('');
       const letterUrls = letters.map(letter => ({
-        url: `https://signwave-sih.s3.ap-south-1.amazonaws.com/output_alphabet_pics/${letter.toLowerCase()}.jpg`,
+        url: `https://finalyearproject123.blob.core.windows.net/container1/output_alphabet_pics/${letter.toLowerCase()}.jpg`,
         type: 'letter',
         original: letter
       }));
 
+      // Replace the current word in the queue with its constituent letters
       const newQueue = [
         ...videoQueue.slice(0, currentVideoIndex),
         ...letterUrls,
@@ -79,33 +93,55 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
       setVideoQueue(newQueue);
       handleTransition(newQueue[currentVideoIndex]);
     } else {
+      // Move to the next item if this one fails
       handleVideoEnd();
     }
   };
 
   const startImageTimer = () => {
+    // Clear any existing timer first
+    if (imageTimer) {
+      clearTimeout(imageTimer);
+    }
+    
     const timer = setTimeout(() => {
       handleVideoEnd();
     }, 2000);
+    
     setImageTimer(timer);
   };
 
   const handleVideoEnd = () => {
+    // Clear any existing image timer
     if (imageTimer) {
       clearTimeout(imageTimer);
+      setImageTimer(null);
     }
 
     if (currentVideoIndex < videoQueue.length - 1) {
-      setCurrentVideoIndex(prev => prev + 1);
-      const nextItem = videoQueue[currentVideoIndex + 1];
-      handleTransition(nextItem);
+      // Move to the next item in the queue
+      const nextIndex = currentVideoIndex + 1;
+      setCurrentVideoIndex(nextIndex);
+      handleTransition(videoQueue[nextIndex]);
     } else {
-      setCurrentVideoIndex(0);
-      setCurrentVideo('');
-      setVideoQueue([]);
-      setIsLoading(true);
-      setFailedVideos(new Set());
+      // We've reached the end of the queue
+      resetState();
       onClose();
+      if (onComplete && typeof onComplete === 'function') {
+        onComplete();
+      }
+    }
+  };
+
+  const resetState = () => {
+    setCurrentVideoIndex(0);
+    setCurrentVideo(null);
+    setVideoQueue([]);
+    setIsLoading(true);
+    setFailedVideos(new Set());
+    if (imageTimer) {
+      clearTimeout(imageTimer);
+      setImageTimer(null);
     }
   };
 
@@ -132,7 +168,7 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
             className="w-full h-full object-contain"
             autoPlay
             onEnded={handleVideoEnd}
-            onError={handleVideoError}
+            onError={() => handleVideoError()}
           >
             <source src={content.url} type="video/mp4" />
             Your browser does not support the video tag.
@@ -143,8 +179,12 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
             src={content.url}
             alt={`Sign for letter ${content.original}`}
             className="w-full h-full object-contain"
-            onError={handleVideoEnd}
-            onLoad={() => content === currentVideo && startImageTimer()}
+            onError={() => handleVideoEnd()}
+            onLoad={() => {
+              if (content === currentVideo) {
+                startImageTimer();
+              }
+            }}
           />
         )}
       </div>
@@ -162,6 +202,7 @@ const VideoModal = ({ words, isOpen, onClose, onComplete }) => {
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              aria-label="Close"
             >
               <span className="sr-only">Close</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

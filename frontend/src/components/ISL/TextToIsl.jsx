@@ -13,7 +13,7 @@ const SpeechToIsl = () => {
     const [error, setError] = useState("");
     const { LoadingScreen, startLoading, stopLoading } = useLoadingScreen();
 
-    const API_KEY = 'AIzaSyBvP54muXf9wkitql0g9FOnqM1NoFeB-es';
+    const API_KEY = 'AIzaSyCk_XPfDSVGpWOPSGEzzdWtkuPAq9gpCPE';
     const genAI = new GoogleGenerativeAI(API_KEY);
 
     const handleConversion = async (sentence) => {
@@ -66,7 +66,7 @@ const SpeechToIsl = () => {
     return (
         <div style={{ width: '100%', height: '100%', backgroundColor: '#F3F4F6', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '40px', alignItems: 'center' }}>
             <LoadingScreen />
-            <h1 className="heading11" style={{ fontWeight: 'bold' }}>Text to ISL Translator</h1>
+            <h1 className="heading11" style={{ fontWeight: 'bold' }}>Text to SL Translator</h1>
             <div className='working-box' style={{ gap: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
                 <div className="inbox" style={{ backgroundColor: 'white', borderRadius: '10px', boxShadow: '0px 0px 3px 2px skyblue', padding: '20px', fontSize: '20px', fontWeight: '500', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {error && (

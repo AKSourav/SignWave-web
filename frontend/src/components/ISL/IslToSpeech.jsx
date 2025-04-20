@@ -142,7 +142,7 @@ const IslToSpeech = () => {
 
     return (
         <div style={{ width: '100%', height: '100%', backgroundColor: '#F3F4F6', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '40px', alignItems: 'center' }}>
-            <h1 className="heading11" style={{ fontWeight: 'bold' }}>ISL to Speech Translator</h1>
+            <h1 className="heading11" style={{ fontWeight: 'bold' }}>SL to Speech Translator</h1>
             <div className='working-box' style={{ gap: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
                 {
                     videoPlay ?
@@ -180,7 +180,7 @@ const IslToSpeech = () => {
                                         <label htmlFor='add-gallery-img'>
                                             <div className='add-in-gallery'>
                                                 <input type='file' accept="video/*" id="add-gallery-img" className='inp-video-field' onChange={handleFileChange} />
-                                                <h4>Choose your ISL video</h4>
+                                                <h4>Choose your SL video</h4>
                                             </div>
                                         </label>
                                     </div>

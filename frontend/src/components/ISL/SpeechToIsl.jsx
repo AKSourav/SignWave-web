@@ -18,7 +18,7 @@ const SpeechToIsl = () => {
     const { LoadingScreen, startLoading, stopLoading } = useLoadingScreen();
 
     // Initialize Gemini API
-    const genAI = new GoogleGenerativeAI('AIzaSyBvP54muXf9wkitql0g9FOnqM1NoFeB-es');
+    const genAI = new GoogleGenerativeAI('AIzaSyCk_XPfDSVGpWOPSGEzzdWtkuPAq9gpCPE');
 
     const handleConversion = async (sentence) => {
         if (!sentence.trim()) {
@@ -50,7 +50,7 @@ const SpeechToIsl = () => {
             return finalWords;
         } catch (err) {
             console.error('Translation error:', err);
-            throw new Error('Failed to translate to ISL');
+            throw new Error('Failed to translate to SL');
         }
     };
 
@@ -142,7 +142,7 @@ const SpeechToIsl = () => {
             setWordList(response);
             setIsModalOpen(true);
         } catch (error) {
-            setError(error.message || "Failed to convert speech to ISL. Please try again.");
+            setError(error.message || "Failed to convert speech to SL. Please try again.");
             console.error('Error getting word list:', error);
         } finally {
             stopLoading();
@@ -152,7 +152,7 @@ const SpeechToIsl = () => {
     return (
         <div style={{ width: '100%', height: '100%', backgroundColor: '#F3F4F6', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '40px', alignItems: 'center' }}>
             <LoadingScreen />
-            <h1 className="heading11" style={{ fontWeight: 'bold' }}>Speech to ISL Translator</h1>
+            <h1 className="heading11" style={{ fontWeight: 'bold' }}>Speech to SL Translator</h1>
             <div className='working-box' style={{ gap: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
                 <div className="inbox" style={{ backgroundColor: 'white', borderRadius: '10px', boxShadow: '0px 0px 3px 2px skyblue', padding: '20px', fontSize: '20px', fontWeight: '500' }}>
                     {error && (
