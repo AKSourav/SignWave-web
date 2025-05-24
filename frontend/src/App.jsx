@@ -26,7 +26,7 @@ import VideoCall from './components/ISL/VideoCall'
 import Call from './pages/Call'
 import HolisticPage from './pages/HolisticPage'
 import SignLanguageRecognition from './pages/ISLText'
-// import ISLRecognition from './pages/Test/ISLRecognition'
+import ISLRecognition from './pages/Test/ISLRecognition'
 export const StatusContext = createContext();
 export const PageContext = createContext();
 
@@ -50,11 +50,12 @@ function App({ children }) {
               <Call />
             </>} />
             <Route path='/isltext' element={<>
-              < SignLanguageRecognition/>
-            </>} />
-            {/* <Route path='/test' element={<>
+              {/* < SignLanguageRecognition/> */}
               < ISLRecognition/>
-            </>} /> */}
+            </>} />
+            <Route path='/test' element={<>
+              < ISLRecognition/>
+            </>} />
           </Routes>
         </SocketProvider>
       </PageContext.Provider>
