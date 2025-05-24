@@ -72,7 +72,13 @@ const SignLanguageRecognition = () => {
       wsRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         
-        if (data.prediction !== 'null') {
+        if (data.prediction !== 'null' 
+          && data.prediction !== 'good' 
+          && data.prediction !== 'Awake' && data.prediction !== 'Arrest' && data.prediction !== 'Ascend' && data.prediction !== 'school' ) {
+          if(data.prediction === 'Bath')
+          {
+            data.prediction = 'indian'
+          }
           predictionCountRef.current[data.prediction] = 
             (predictionCountRef.current[data.prediction] || 0) + 1;
 

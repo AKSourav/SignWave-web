@@ -18,7 +18,7 @@ const SpeechToIsl = () => {
     const { LoadingScreen, startLoading, stopLoading } = useLoadingScreen();
 
     // Initialize Gemini API
-    const genAI = new GoogleGenerativeAI('AIzaSyCk_XPfDSVGpWOPSGEzzdWtkuPAq9gpCPE');
+    const genAI = new GoogleGenerativeAI('AIzaSyB-w3gyHcdI2LELCYqH2iQruk89HfWqEm0');
 
     const handleConversion = async (sentence) => {
         if (!sentence.trim()) {

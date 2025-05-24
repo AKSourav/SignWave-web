@@ -33,7 +33,7 @@ const DashboardMain = () => {
     //   description: "Convert Indian Sign Language to spoken language",
     // },
     {
-      id: 'SLtext',
+      id: 'isltext',
       title: "SL To Text",
       icon1: faHandsBubbles,
       icon2: faFilePen,

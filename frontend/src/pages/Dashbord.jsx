@@ -1,6 +1,6 @@
 import LoggedNavbar from '../components/LoggedNavbar';
 import './css/Dashbord.css';
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import PaymentHistory from '../components/Dashboard/PaymentHistory';
 import BitHistory from '../components/Dashboard/BitHistory';
 import CallHistory from '../components/Dashboard/CallHistory';
@@ -25,9 +25,11 @@ import {
   FaMicrophone,
   FaCommentAlt
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const Dashbord = () => {
     const { page, setPage } = useContext(PageContext);
+    const navigate = useNavigate();
     
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -35,6 +37,13 @@ const Dashbord = () => {
     };
 
     const [collapsed, setCollapsed] = useState(false);
+    useEffect(()=>{
+        if(page === 14)
+        {
+            setPage(0);
+            navigate('/isltext')
+        }
+    },[page])
     
     // Menu items configuration with react-icons
     const menuItems = [
@@ -157,8 +166,9 @@ const Dashbord = () => {
                         page === 3 ? <PaymentHistory /> :
                         page === 11 ? <SpeechToIsl /> :
                         page === 12 ? <TextToIsl /> :
-                        page === 13 ? <IslToSpeech /> :
-                        page === 14 ? <IslToText /> : <DashboardMain />}
+                        page === 13 ? <IslToSpeech /> 
+                        :
+                         <DashboardMain />}
                     </div>
                 </div>
             </div>
