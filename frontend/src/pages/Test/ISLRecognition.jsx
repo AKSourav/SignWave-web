@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Maximize, Minimize, RotateCcw } from "lucide-react";
+import { ArrowLeft, Maximize, Minimize, RotateCcw, RefreshCw } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 import * as ort from "onnxruntime-web";
 
@@ -13,14 +13,20 @@ const ISLRecognition = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Prediction stability helpers
   const predictionCountRef = useRef({});
   const lastAddedWordRef = useRef("");
   const PREDICTION_THRESHOLD = 5;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds
 
   const modelUrl = "/isl_rf_model_dual_output.onnx";
-  const probUrl = "/isl_rf_model_prob_output.onnx";
+  let poseResults = null;
+  let handsResults = null;
 
   const LABELS = {
     "0": "0",
@@ -203,6 +209,105 @@ const ISLRecognition = () => {
     return normPose.concat(normHand1, normHand2);
   };
 
+  // Sleep utility for retry delays
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Retry wrapper function
+  const withRetry = async (fn, maxRetries = MAX_RETRIES, delay = RETRY_DELAY) => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        console.error(`Attempt ${attempt + 1} failed:`, error);
+        
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${delay}ms... (${attempt + 1}/${maxRetries})`);
+          setRetryCount(attempt + 1);
+          setIsRetrying(true);
+          await sleep(delay);
+          setIsRetrying(false);
+          // Exponential backoff: double the delay for next attempt
+          delay *= 2;
+        }
+      }
+    }
+    
+    throw lastError;
+  };
+
+  // Load ONNX model with retry
+  const loadONNXModel = async () => {
+    return withRetry(async () => {
+      ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@dev/dist/";
+      
+      const sess = await ort.InferenceSession.create(modelUrl, {
+        executionProviders: ["wasm"],
+        wasm: {
+          path: "/onnxruntime/",
+        },
+      });
+      
+      return sess;
+    });
+  };
+
+  // Load MediaPipe libraries with retry
+  const loadMediaPipeLibraries = async () => {
+    return withRetry(async () => {
+      await Promise.all([
+        import("https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"),
+        import("https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"),
+        import("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"),
+      ]);
+      
+      // Verify that the libraries loaded correctly
+      if (!window.Hands || !window.Pose || !window.Camera) {
+        throw new Error("MediaPipe libraries failed to load properly");
+      }
+    });
+  };
+
+  // Initialize MediaPipe models with retry
+  const initializeMediaPipe = async () => {
+    return withRetry(async () => {
+      const hands = new window.Hands({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      });
+      hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7,
+      });
+
+      const pose = new window.Pose({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7,
+      });
+
+      return { hands, pose };
+    });
+  };
+
+  // Manual retry function
+  const handleManualRetry = () => {
+    setError(null);
+    setRetryCount(0);
+    setLoading(true);
+    // Trigger re-initialization
+    window.location.reload();
+  };
+
   useEffect(() => {
     // Request landscape orientation on mobile devices
     const requestLandscape = async () => {
@@ -262,148 +367,141 @@ const ISLRecognition = () => {
     if (!videoRef.current) return;
 
     let cameraInstance = null;
+    let isComponentMounted = true;
 
     const initialize = async () => {
       try {
-        ort.env.wasm.wasmPaths =
-          "https://cdn.jsdelivr.net/npm/onnxruntime-web@dev/dist/";
-        const sess = await ort.InferenceSession.create(modelUrl, {
-          executionProviders: ["wasm"],
-          wasm: {
-            path: "/onnxruntime/",
-          },
-        });
+        setError(null);
+        setRetryCount(0);
+
+        // Load ONNX model with retry
+        console.log("Loading ONNX model...");
+        const sess = await loadONNXModel();
+        if (!isComponentMounted) return;
         setSession(sess);
+        console.log("ONNX model loaded successfully");
 
-        await Promise.all([
-          import("https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"),
-          import("https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"),
-          import("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"),
-        ]);
+        // Load MediaPipe libraries with retry
+        console.log("Loading MediaPipe libraries...");
+        await loadMediaPipeLibraries();
+        if (!isComponentMounted) return;
+        console.log("MediaPipe libraries loaded successfully");
 
-        const hands = new window.Hands({
-          locateFile: (file) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        // Initialize MediaPipe models with retry
+        console.log("Initializing MediaPipe models...");
+        const { hands, pose } = await initializeMediaPipe();
+        if (!isComponentMounted) return;
+        console.log("MediaPipe models initialized successfully");
+
+        // Setup camera with retry
+        console.log("Setting up camera...");
+        await withRetry(async () => {
+          cameraInstance = new window.Camera(videoRef.current, {
+            onFrame: async () => {
+              await hands.send({ image: videoRef.current });
+              await pose.send({ image: videoRef.current });
+            },
+            width: typeof window !== 'undefined' && 
+                   window.innerWidth <= 768 && window.innerWidth < window.innerHeight ? 
+                   Math.min(640, window.innerHeight - 32) : // Portrait mobile: use height for width
+                   typeof window !== 'undefined' && window.innerWidth <= 768 ? 
+                   Math.min(854, window.innerWidth - 32) : // Landscape mobile: normal width
+                   videoRef.current.clientWidth, // Desktop: full width
+            height: typeof window !== 'undefined' && 
+                    window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
+                    Math.min(480, window.innerWidth - 160) : // Portrait mobile: use width for height  
+                    typeof window !== 'undefined' && window.innerWidth <= 768 ?
+                    Math.min(480, window.innerHeight - 160) : // Landscape mobile: normal height
+                    videoRef.current.clientHeight, // Desktop: full height
+          });
+
+          hands.onResults((results) => {
+            handsResults = results;
+            tryRunInference();
+          });
+
+          pose.onResults((results) => {
+            poseResults = results;
+            tryRunInference();
+          });
+
+          await cameraInstance.start();
+
+          const tryRunInference = async () => {
+            if (!sess || !poseResults || !handsResults) return;
+
+            const inputTensorData = extractFeatures(poseResults, handsResults);
+            if (!inputTensorData) {
+              setPrediction("null");
+              return;
+            }
+
+            const inputTensor = new ort.Tensor(
+              "float32",
+              Float32Array.from(inputTensorData),
+              [1, 258]
+            );
+
+            try {
+              const feeds = { float_input: inputTensor };
+              const output = await sess.run(feeds);
+              const outputTensor1 =
+                output.output_label || output.label || Object.values(output)[0];
+              const outputTensor2 =
+                output.probabilities || output.probabilities || Object.values(output)[1];
+
+              const predictedClassIndex = Number(outputTensor1.data[0]);
+              const predictedProb = (Number(Math.max(...outputTensor2.data))*100).toFixed(2);
+              const predictedWord = LABELS[predictedClassIndex] || "Unknown";
+              setPrediction(`${predictedWord} (${predictedProb} %)`);
+
+              if (predictedWord !== "null" && predictedWord !== "Unknown" && predictedProb > 50) {
+                predictionCountRef.current[predictedWord] =
+                  (predictionCountRef.current[predictedWord] || 0) + 1;
+
+                if (
+                  predictionCountRef.current[predictedWord] >= PREDICTION_THRESHOLD &&
+                  lastAddedWordRef.current !== predictedWord
+                ) {
+                  setSentence((prev) =>
+                    prev.length === 0 || prev[prev.length - 1] !== predictedWord
+                      ? [...prev, predictedWord]
+                      : prev
+                  );
+                  lastAddedWordRef.current = predictedWord;
+                  predictionCountRef.current = {};
+                }
+              }
+            } catch (e) {
+              console.error("ONNX inference error:", e);
+              setPrediction("error");
+            }
+          };
         });
-        hands.setOptions({
-          maxNumHands: 2,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7,
-        });
 
-        const pose = new window.Pose({
-          locateFile: (file) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-        });
-        pose.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7,
-        });
-
-        cameraInstance = new window.Camera(videoRef.current, {
-          onFrame: async () => {
-            await hands.send({ image: videoRef.current });
-            await pose.send({ image: videoRef.current });
-          },
-          width: typeof window !== 'undefined' && 
-                 window.innerWidth <= 768 && window.innerWidth < window.innerHeight ? 
-                 Math.min(640, window.innerHeight - 32) : // Portrait mobile: use height for width
-                 typeof window !== 'undefined' && window.innerWidth <= 768 ? 
-                 Math.min(854, window.innerWidth - 32) : // Landscape mobile: normal width
-                 videoRef.current.clientWidth, // Desktop: full width
-          height: typeof window !== 'undefined' && 
-                  window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
-                  Math.min(480, window.innerWidth - 160) : // Portrait mobile: use width for height  
-                  typeof window !== 'undefined' && window.innerWidth <= 768 ?
-                  Math.min(480, window.innerHeight - 160) : // Landscape mobile: normal height
-                  videoRef.current.clientHeight, // Desktop: full height
-        });
-
-        let poseResults = null;
-        let handsResults = null;
-
-        hands.onResults((results) => {
-          handsResults = results;
-          tryRunInference();
-        });
-
-        pose.onResults((results) => {
-          poseResults = results;
-          tryRunInference();
-        });
-
-        await cameraInstance.start();
+        console.log("Camera setup completed successfully");
 
         var checkInterval = null;
         checkInterval = setInterval(() => {
-          if (sess) {
+          if (sess && handsResults && poseResults ) {
             setLoading(false);
             if (checkInterval) clearInterval(checkInterval);
           }
         }, 500);
 
-        const tryRunInference = async () => {
-          if (!sess || !poseResults || !handsResults) return;
-
-          const inputTensorData = extractFeatures(poseResults, handsResults);
-          if (!inputTensorData) {
-            setPrediction("null");
-            return;
-          }
-
-          const inputTensor = new ort.Tensor(
-            "float32",
-            Float32Array.from(inputTensorData),
-            [1, 258]
-          );
-
-          try {
-            const feeds = { float_input: inputTensor };
-            const output = await sess.run(feeds);
-            const outputTensor1 =
-              output.output_label || output.label || Object.values(output)[0];
-            const outputTensor2 =
-              output.probabilities || output.probabilities || Object.values(output)[1];
-
-            const predictedClassIndex = Number(outputTensor1.data[0]);
-            const predictedProb = (Number(Math.max(...outputTensor2.data))*100).toFixed(2);
-            const predictedWord = LABELS[predictedClassIndex] || "Unknown";
-            setPrediction(`${predictedWord} (${predictedProb} %)`);
-
-            if (predictedWord !== "null" && predictedWord !== "Unknown" && predictedProb > 50) {
-              predictionCountRef.current[predictedWord] =
-                (predictionCountRef.current[predictedWord] || 0) + 1;
-
-              if (
-                predictionCountRef.current[predictedWord] >= PREDICTION_THRESHOLD &&
-                lastAddedWordRef.current !== predictedWord
-              ) {
-                setSentence((prev) =>
-                  prev.length === 0 || prev[prev.length - 1] !== predictedWord
-                    ? [...prev, predictedWord]
-                    : prev
-                );
-                lastAddedWordRef.current = predictedWord;
-                predictionCountRef.current = {};
-              }
-            }
-          } catch (e) {
-            console.error("ONNX inference error:", e);
-            setPrediction("error");
-          }
-        };
       } catch (err) {
         console.error("Initialization error:", err);
-        setLoading(false);
+        if (isComponentMounted) {
+          setError(err.message || "Failed to initialize recognition system");
+          setLoading(false);
+        }
       }
     };
 
     initialize();
 
     return () => {
+      isComponentMounted = false;
       if (cameraInstance) {
         cameraInstance.stop();
       }
@@ -475,17 +573,59 @@ const ISLRecognition = () => {
         </div>
       )}
 
-      {loading && (
+      {/* Error Screen */}
+      {error && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+          <div className="text-center space-y-6 max-w-md w-full">
+            <div className="relative flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 mx-auto">
+              <div className="rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-red-500/20"></div>
+              <div className="absolute inset-4 text-red-500">
+                <svg className="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-xl sm:text-2xl font-semibold text-red-400">Initialization Failed</h3>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                {error}
+              </p>
+              {retryCount > 0 && (
+                <p className="text-yellow-400 text-sm">
+                  Attempted {retryCount} time{retryCount !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+            
+            <button
+              onClick={handleManualRetry}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium mx-auto"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Screen with Retry Information */}
+      {loading && !error && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="text-center space-y-4 sm:space-y-6 max-w-md w-full">
             <div className="relative flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 mx-auto">
               <div className="absolute rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-blue-500/20 animate-pulse"></div>
-              <div className="rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-transparent border-t-blue-500 border-r-purple-500 animate-spin"></div>
+              <div className={`rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-transparent border-t-blue-500 border-r-purple-500 ${isRetrying ? 'animate-spin' : 'animate-spin'}`}></div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl sm:text-2xl font-semibold text-white">Initializing Recognition</h3>
+              <h3 className="text-xl sm:text-2xl font-semibold text-white">
+                {isRetrying ? 'Retrying...' : 'Initializing Recognition'}
+              </h3>
               <p className="text-gray-300 text-sm sm:text-base px-4">
-                Loading sign language recognition model and accessing camera...
+                {isRetrying 
+                  ? `Retry attempt ${retryCount}/${MAX_RETRIES}...`
+                  : 'Loading sign language recognition model and accessing camera...'
+                }
               </p>
             </div>
           </div>
