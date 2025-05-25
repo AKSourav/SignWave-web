@@ -18,13 +18,188 @@ const ISLRecognition = () => {
   const lastAddedWordRef = useRef("");
   const PREDICTION_THRESHOLD = 5;
 
-  const modelUrl = "/isl_rf_model_single_output.onnx";
+  const modelUrl = "/isl_rf_model_dual_output.onnx";
+  const probUrl = "/isl_rf_model_prob_output.onnx";
 
   const LABELS = {
-    0: "I",
-    1: "food",
-    2: "indian",
-    3: "love",
+    "0": "0",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "7",
+    "7": "8",
+    "8": "9",
+    "9": "Indian",
+    "10": "angry",
+    "11": "arrest",
+    "12": "baby",
+    "13": "brush",
+    "14": "dog",
+    "15": "food",
+    "16": "hate",
+    "17": "i",
+    "18": "love",
+    "19": "morning",
+    "20": "play",
+    "21": "you"
+  };
+
+  // Mediapipe pose landmark indexes (used for normalization)
+  const mpPoseLandmark = {
+    LEFT_HIP: 23,
+    RIGHT_HIP: 24,
+    LEFT_SHOULDER: 11,
+    RIGHT_SHOULDER: 12,
+  };
+
+  // Normalize pose landmarks: translate & scale relative to hips & torso size
+  const normalizePoseLandmarks = (poseLandmarks) => {
+    const coords = [];
+    for (let i = 0; i < 33; i++) {
+      const idx = i * 4;
+      coords.push([
+        poseLandmarks[idx],
+        poseLandmarks[idx + 1],
+        poseLandmarks[idx + 2],
+        poseLandmarks[idx + 3], // visibility
+      ]);
+    }
+
+    // Origin = midpoint between left and right hip
+    const leftHip = coords[mpPoseLandmark.LEFT_HIP];
+    const rightHip = coords[mpPoseLandmark.RIGHT_HIP];
+    const origin = [
+      (leftHip[0] + rightHip[0]) / 2,
+      (leftHip[1] + rightHip[1]) / 2,
+      (leftHip[2] + rightHip[2]) / 2,
+    ];
+
+    // Translate relative to origin
+    for (let i = 0; i < coords.length; i++) {
+      coords[i][0] -= origin[0];
+      coords[i][1] -= origin[1];
+      coords[i][2] -= origin[2];
+    }
+
+    // Calculate torso size: distance between shoulders + hips
+    const leftShoulder = coords[mpPoseLandmark.LEFT_SHOULDER];
+    const rightShoulder = coords[mpPoseLandmark.RIGHT_SHOULDER];
+    const torsoSize =
+      Math.hypot(
+        leftShoulder[0] - rightShoulder[0],
+        leftShoulder[1] - rightShoulder[1],
+        leftShoulder[2] - rightShoulder[2]
+      ) +
+      Math.hypot(
+        coords[mpPoseLandmark.LEFT_HIP][0] -
+        coords[mpPoseLandmark.RIGHT_HIP][0],
+        coords[mpPoseLandmark.LEFT_HIP][1] -
+        coords[mpPoseLandmark.RIGHT_HIP][1],
+        coords[mpPoseLandmark.LEFT_HIP][2] -
+        coords[mpPoseLandmark.RIGHT_HIP][2]
+      );
+
+    // Scale coordinates by torso size
+    if (torsoSize > 0) {
+      for (let i = 0; i < coords.length; i++) {
+        coords[i][0] /= torsoSize;
+        coords[i][1] /= torsoSize;
+        coords[i][2] /= torsoSize;
+      }
+    }
+
+    // Flatten and keep visibility as is
+    const normalized = [];
+    for (const lm of coords) {
+      normalized.push(lm[0], lm[1], lm[2], lm[3]);
+    }
+    return normalized;
+  };
+
+  // Normalize hand landmarks: translate & scale relative to wrist & hand size
+  const normalizeHandLandmarks = (handLandmarks) => {
+    // handLandmarks: array length 63 (21 points * 3 coords)
+    const coords = [];
+    for (let i = 0; i < 21; i++) {
+      coords.push([
+        handLandmarks[i * 3],
+        handLandmarks[i * 3 + 1],
+        handLandmarks[i * 3 + 2],
+      ]);
+    }
+
+    // Wrist is landmark 0
+    const origin = coords[0];
+
+    // Translate relative to wrist
+    for (let i = 0; i < coords.length; i++) {
+      coords[i][0] -= origin[0];
+      coords[i][1] -= origin[1];
+      coords[i][2] -= origin[2];
+    }
+
+    // Find max distance for scaling
+    let maxDist = 0;
+    for (const c of coords) {
+      const dist = Math.sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+      if (dist > maxDist) maxDist = dist;
+    }
+
+    if (maxDist > 0) {
+      for (let i = 0; i < coords.length; i++) {
+        coords[i][0] /= maxDist;
+        coords[i][1] /= maxDist;
+        coords[i][2] /= maxDist;
+      }
+    }
+
+    // Flatten back
+    const normalized = [];
+    for (const c of coords) {
+      normalized.push(c[0], c[1], c[2]);
+    }
+    return normalized;
+  };
+
+  // Extract and normalize landmarks for model input
+  const extractFeatures = (poseRes, handsRes) => {
+    if (!poseRes?.poseLandmarks) return null;
+
+    // Extract pose landmarks (flattened)
+    const poseLandmarks = [];
+    for (const lm of poseRes.poseLandmarks) {
+      poseLandmarks.push(lm.x, lm.y, lm.z, lm.visibility);
+    }
+    if (poseLandmarks.length !== 33 * 4) return null;
+
+    let handLandmarks = [];
+    if (handsRes?.multiHandLandmarks?.length) {
+      for (const hand of handsRes.multiHandLandmarks) {
+        for (const lm of hand) {
+          handLandmarks.push(lm.x, lm.y, lm.z);
+        }
+      }
+      if (handsRes.multiHandLandmarks.length === 1) {
+        handLandmarks = handLandmarks.concat(new Array(21 * 3).fill(0));
+      }
+    } else {
+      handLandmarks = new Array(21 * 3 * 2).fill(0);
+    }
+    if (handLandmarks.length !== 21 * 3 * 2) return null;
+
+    // Normalize pose landmarks
+    const normPose = normalizePoseLandmarks(poseLandmarks);
+
+    // Split hands and normalize individually
+    const hand1 = handLandmarks.slice(0, 63);
+    const hand2 = handLandmarks.slice(63);
+
+    const normHand1 = normalizeHandLandmarks(hand1);
+    const normHand2 = normalizeHandLandmarks(hand2);
+
+    return normPose.concat(normHand1, normHand2);
   };
 
   useEffect(() => {
@@ -42,6 +217,12 @@ const ISLRecognition = () => {
             path: "/onnxruntime/",
           },
         });
+        // const sess1 = await ort.InferenceSession.create(probUrl, {
+        //   executionProviders: ["wasm"],
+        //   wasm: {
+        //     path: "/onnxruntime/",
+        //   },
+        // });
         setSession(sess);
 
         await Promise.all([
@@ -96,15 +277,13 @@ const ISLRecognition = () => {
 
         await cameraInstance.start();
 
-        var checkInterval = null
-        checkInterval = setInterval(()=>{
-          console.log("checking")
-          if(sess)
-          {
+        var checkInterval = null;
+        checkInterval = setInterval(() => {
+          if (sess) {
             setLoading(false);
-            if( checkInterval) clearInterval(checkInterval)
+            if (checkInterval) clearInterval(checkInterval);
           }
-        },500)
+        }, 500);
 
         const tryRunInference = async () => {
           if (!sess || !poseResults || !handsResults) return;
@@ -124,15 +303,20 @@ const ISLRecognition = () => {
           try {
             const feeds = { float_input: inputTensor };
             const output = await sess.run(feeds);
-            const outputTensor =
-              output.output_label || output.output || Object.values(output)[0];
+            // const output1 = await sess1.run(feeds);
+            // console.log(output);
+            const outputTensor1 =
+              output.output_label || output.label || Object.values(output)[0];
+            const outputTensor2 =
+              output.probabilities || output.probabilities || Object.values(output)[1];
 
-            const predictedClassIndex = Number(outputTensor.data[0]);
+            const predictedClassIndex = Number(outputTensor1.data[0]);
+            const predictedProb = (Number(Math.max(...outputTensor2.data))*100).toFixed(2);
+            // console.log(predictedProb*100);
             const predictedWord = LABELS[predictedClassIndex] || "Unknown";
+            setPrediction(`${predictedWord} (${predictedProb} %)`);
 
-            setPrediction(predictedWord);
-
-            if (predictedWord !== "null" && predictedWord !== "Unknown") {
+            if (predictedWord !== "null" && predictedWord !== "Unknown" && predictedProb > 50) {
               predictionCountRef.current[predictedWord] =
                 (predictionCountRef.current[predictedWord] || 0) + 1;
 
@@ -153,31 +337,6 @@ const ISLRecognition = () => {
             console.error("ONNX inference error:", e);
             setPrediction("error");
           }
-        };
-
-        const extractFeatures = (poseRes, handsRes) => {
-          if (!poseRes?.poseLandmarks || !handsRes?.multiHandLandmarks) {
-            return null;
-          }
-
-          const poseLandmarks = [];
-          for (const lm of poseRes.poseLandmarks) {
-            poseLandmarks.push(lm.x, lm.y, lm.z, lm.visibility);
-          }
-          if (poseLandmarks.length !== 33 * 4) return null;
-
-          let handLandmarks = [];
-          for (const hand of handsRes.multiHandLandmarks) {
-            for (const lm of hand) {
-              handLandmarks.push(lm.x, lm.y, lm.z);
-            }
-          }
-          if (handsRes.multiHandLandmarks.length === 1) {
-            handLandmarks = handLandmarks.concat(new Array(21 * 3).fill(0));
-          }
-          if (handLandmarks.length !== 21 * 3 * 2) return null;
-
-          return poseLandmarks.concat(handLandmarks);
         };
       } catch (err) {
         console.error("Initialization error:", err);
@@ -241,7 +400,6 @@ const ISLRecognition = () => {
           </div>
         </div>
       )}
-
 
       {/* Video container with subtle border */}
       <div className="absolute inset-4 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50">

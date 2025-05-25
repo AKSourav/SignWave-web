@@ -1,9 +1,6 @@
 import LoggedNavbar from '../components/LoggedNavbar';
 import './css/Dashbord.css';
 import { useState, useContext, useEffect } from 'react';
-import PaymentHistory from '../components/Dashboard/PaymentHistory';
-import BitHistory from '../components/Dashboard/BitHistory';
-import CallHistory from '../components/Dashboard/CallHistory';
 import DashboardMain from '../components/Dashboard/DashboardMain';
 import SpeechToIsl from '../components/ISL/SpeechToIsl';
 import TextToIsl from '../components/ISL/TextToIsl';
@@ -161,9 +158,6 @@ const Dashbord = () => {
                     {/* Main Content */}
                     <div className="mt-10 flex-1 p-6 overflow-auto">
                         {page === 0 ? <DashboardMain /> :
-                        page === 1 ? <CallHistory /> :
-                        page === 2 ? <BitHistory /> :
-                        page === 3 ? <PaymentHistory /> :
                         page === 11 ? <SpeechToIsl /> :
                         page === 12 ? <TextToIsl /> :
                         page === 13 ? <IslToSpeech /> 
