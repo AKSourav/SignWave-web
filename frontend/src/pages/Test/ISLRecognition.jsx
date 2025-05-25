@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Maximize, Minimize, RotateCcw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import * as ort from "onnxruntime-web";
 
 const ISLRecognition = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [session, setSession] = useState(null);
@@ -12,6 +12,7 @@ const ISLRecognition = () => {
   const [sentence, setSentence] = useState([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
 
   // Prediction stability helpers
   const predictionCountRef = useRef({});
@@ -203,6 +204,61 @@ const ISLRecognition = () => {
   };
 
   useEffect(() => {
+    // Request landscape orientation on mobile devices
+    const requestLandscape = async () => {
+      try {
+        // Check if device supports orientation lock
+        if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape');
+        }
+      } catch (error) {
+        console.log('Orientation lock not supported or failed:', error);
+        // Show orientation prompt if lock fails
+        if (typeof window !== 'undefined' && window.innerWidth < window.innerHeight && window.innerWidth <= 768) {
+          setShowOrientationPrompt(true);
+        }
+      }
+    };
+
+    // Handle orientation changes
+    const handleOrientationChange = () => {
+      if (typeof window !== 'undefined') {
+        // Hide prompt when in landscape
+        if (window.innerWidth > window.innerHeight) {
+          setShowOrientationPrompt(false);
+        }
+        // Show prompt when in portrait on mobile
+        else if (window.innerWidth <= 768) {
+          setShowOrientationPrompt(true);
+        }
+      }
+    };
+
+    requestLandscape();
+    
+    // Listen for orientation changes
+    if (typeof window !== 'undefined') {
+      window.addEventListener('orientationchange', handleOrientationChange);
+      window.addEventListener('resize', handleOrientationChange);
+
+      // Initial check
+      handleOrientationChange();
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('orientationchange', handleOrientationChange);
+        window.removeEventListener('resize', handleOrientationChange);
+      }
+      
+      // Unlock orientation when leaving
+      if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!videoRef.current) return;
 
     let cameraInstance = null;
@@ -217,12 +273,6 @@ const ISLRecognition = () => {
             path: "/onnxruntime/",
           },
         });
-        // const sess1 = await ort.InferenceSession.create(probUrl, {
-        //   executionProviders: ["wasm"],
-        //   wasm: {
-        //     path: "/onnxruntime/",
-        //   },
-        // });
         setSession(sess);
 
         await Promise.all([
@@ -258,8 +308,18 @@ const ISLRecognition = () => {
             await hands.send({ image: videoRef.current });
             await pose.send({ image: videoRef.current });
           },
-          width: videoRef.current.clientWidth,
-          height: videoRef.current.clientHeight,
+          width: typeof window !== 'undefined' && 
+                 window.innerWidth <= 768 && window.innerWidth < window.innerHeight ? 
+                 Math.min(640, window.innerHeight - 32) : // Portrait mobile: use height for width
+                 typeof window !== 'undefined' && window.innerWidth <= 768 ? 
+                 Math.min(854, window.innerWidth - 32) : // Landscape mobile: normal width
+                 videoRef.current.clientWidth, // Desktop: full width
+          height: typeof window !== 'undefined' && 
+                  window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
+                  Math.min(480, window.innerWidth - 160) : // Portrait mobile: use width for height  
+                  typeof window !== 'undefined' && window.innerWidth <= 768 ?
+                  Math.min(480, window.innerHeight - 160) : // Landscape mobile: normal height
+                  videoRef.current.clientHeight, // Desktop: full height
         });
 
         let poseResults = null;
@@ -303,8 +363,6 @@ const ISLRecognition = () => {
           try {
             const feeds = { float_input: inputTensor };
             const output = await sess.run(feeds);
-            // const output1 = await sess1.run(feeds);
-            // console.log(output);
             const outputTensor1 =
               output.output_label || output.label || Object.values(output)[0];
             const outputTensor2 =
@@ -312,7 +370,6 @@ const ISLRecognition = () => {
 
             const predictedClassIndex = Number(outputTensor1.data[0]);
             const predictedProb = (Number(Math.max(...outputTensor2.data))*100).toFixed(2);
-            // console.log(predictedProb*100);
             const predictedWord = LABELS[predictedClassIndex] || "Unknown";
             setPrediction(`${predictedWord} (${predictedProb} %)`);
 
@@ -351,7 +408,7 @@ const ISLRecognition = () => {
         cameraInstance.stop();
       }
     };
-  }, [videoRef.current]);
+  }, []); // Remove videoRef.current from dependency array
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -384,16 +441,50 @@ const ISLRecognition = () => {
       className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden"
       style={{ height: "100vh" }}
     >
+      {/* Orientation Prompt for Mobile Portrait Mode */}
+      {showOrientationPrompt && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+          <div className="text-center space-y-6 max-w-sm w-full">
+            <div className="relative mx-auto w-16 h-16">
+              {/* Phone icon with rotation animation */}
+              <div className="absolute inset-0 border-2 border-white rounded-lg transform rotate-0 transition-transform duration-1000"></div>
+              <div className="absolute inset-2 bg-white/20 rounded-sm"></div>
+              <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-white rounded-full"></div>
+              
+              {/* Rotation indicator */}
+              <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
+                <div className="w-6 h-6 border-2 border-white rounded-full border-dashed animate-spin"></div>
+                <div className="absolute inset-1 bg-white rounded-full"></div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-xl font-semibold text-white">Rotate to Landscape</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                For the best sign language recognition experience, please rotate your device to landscape mode.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowOrientationPrompt(false)}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+            >
+              Continue Anyway
+            </button>
+          </div>
+        </div>
+      )}
+
       {loading && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-          <div className="text-center space-y-6">
-            <div className="relative flex items-center justify-center h-20 w-20 mx-auto">
-              <div className="absolute rounded-full h-20 w-20 border-4 border-blue-500/20 animate-pulse"></div>
-              <div className="rounded-full h-20 w-20 border-4 border-transparent border-t-blue-500 border-r-purple-500 animate-spin"></div>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="text-center space-y-4 sm:space-y-6 max-w-md w-full">
+            <div className="relative flex items-center justify-center h-16 w-16 sm:h-20 sm:w-20 mx-auto">
+              <div className="absolute rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-blue-500/20 animate-pulse"></div>
+              <div className="rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-transparent border-t-blue-500 border-r-purple-500 animate-spin"></div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-semibold text-white">Initializing Recognition</h3>
-              <p className="text-gray-300 max-w-md mx-auto">
+              <h3 className="text-xl sm:text-2xl font-semibold text-white">Initializing Recognition</h3>
+              <p className="text-gray-300 text-sm sm:text-base px-4">
                 Loading sign language recognition model and accessing camera...
               </p>
             </div>
@@ -401,11 +492,11 @@ const ISLRecognition = () => {
         </div>
       )}
 
-      {/* Video container with subtle border */}
-      <div className="absolute inset-4 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50">
+      {/* Video container with responsive padding and mobile-optimized dimensions */}
+      <div className="absolute inset-2 sm:inset-4 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain sm:object-cover"
           autoPlay
           muted
           playsInline
@@ -415,32 +506,72 @@ const ISLRecognition = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
       </div>
 
-      {/* Top navigation bar */}
-      <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-30">
+      {/* Top navigation bar - responsive positioning and sizing */}
+      <div className="absolute top-3 sm:top-6 left-3 sm:left-6 right-3 sm:right-6 flex justify-between items-center z-30">
         <button
-          onClick={() => navigate("/dash")}
-          className="flex items-center gap-3 px-4 py-3 bg-black/60 backdrop-blur-md rounded-xl hover:bg-black/80 transition-all duration-200 shadow-lg border border-white/10"
+          onClick={() => console.log('Navigate to dashboard')}
+          className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-black/60 backdrop-blur-md rounded-lg sm:rounded-xl hover:bg-black/80 transition-all duration-200 shadow-lg border border-white/10"
         >
-          <ArrowLeft className="h-5 w-5 text-white" />
-          <span className="text-white font-medium">Back to Dashboard</span>
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <span className="text-white font-medium text-sm sm:text-base hidden xs:inline">Back to Dashboard</span>
+          <span className="text-white font-medium text-sm sm:text-base xs:hidden">Back</span>
         </button>
 
         <button
           onClick={toggleFullScreen}
-          className="p-3 bg-black/60 backdrop-blur-md rounded-xl hover:bg-black/80 transition-all duration-200 shadow-lg border border-white/10"
+          className="p-2 sm:p-3 bg-black/60 backdrop-blur-md rounded-lg sm:rounded-xl hover:bg-black/80 transition-all duration-200 shadow-lg border border-white/10"
         >
           {isFullScreen ? (
-            <Minimize className="h-5 w-5 text-white" />
+            <Minimize className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           ) : (
-            <Maximize className="h-5 w-5 text-white" />
+            <Maximize className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           )}
         </button>
       </div>
 
-      {/* Bottom panel - compact and transparent */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30 max-w-2xl w-full px-4">
-        <div className="bg-black/40 backdrop-blur-md rounded-xl p-3 shadow-lg border border-white/5">
-          <div className="space-y-2">
+      {/* Bottom panel - responsive layout with mobile spacing adjustment */}
+      <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-1/2 right-3 sm:right-auto sm:transform sm:-translate-x-1/2 z-30 sm:max-w-2xl sm:w-full">
+        <div className="bg-black/40 backdrop-blur-md rounded-lg sm:rounded-xl p-2 sm:p-4 shadow-lg border border-white/5">
+          
+          {/* Mobile layout - stacked vertically with compact spacing */}
+          <div className="space-y-2 sm:hidden">
+            {/* Current prediction */}
+            <div className="flex items-center justify-between px-2 py-1.5 bg-blue-500/15 rounded-lg border border-blue-500/20">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+                <span className="text-blue-200 text-xs font-medium">Detection:</span>
+              </div>
+              <span className="text-blue-100 font-bold text-xs truncate ml-2">
+                {prediction || "..."}
+              </span>
+            </div>
+
+            {/* Sentence display */}
+            <div className="px-2 py-1.5 bg-green-500/15 rounded-lg border border-green-500/20">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-green-200 text-xs font-medium">Sentence:</span>
+                <span className="text-green-300 text-xs">
+                  {sentence.length} word{sentence.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <p className="text-green-100 font-semibold text-xs leading-tight">
+                {sentence.length > 0 ? sentence.join(" ") : "Start signing..."}
+              </p>
+            </div>
+
+            {/* Action button */}
+            <button
+              onClick={resetSentence}
+              disabled={sentence.length === 0}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-red-500/15 border border-red-500/20 text-red-100 hover:bg-red-500/25 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Clear
+            </button>
+          </div>
+
+          {/* Desktop/Tablet layout - original layout preserved */}
+          <div className="space-y-2 hidden sm:block">
             {/* Current prediction - compact */}
             <div className="flex items-center justify-between px-3 py-2 bg-blue-500/15 rounded-lg border border-blue-500/20">
               <div className="flex items-center gap-2">
@@ -478,8 +609,8 @@ const ISLRecognition = () => {
         </div>
       </div>
 
-      {/* Subtle corner indicators for active status */}
-      <div className="absolute top-4 right-4 w-4 h-4 rounded-full bg-green-400 animate-pulse shadow-lg"></div>
+      {/* Subtle corner indicators for active status - responsive positioning */}
+      <div className="absolute top-3 sm:top-4 right-3 sm:right-4 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-400 animate-pulse shadow-lg"></div>
     </div>
   );
 };
