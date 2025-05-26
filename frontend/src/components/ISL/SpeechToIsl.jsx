@@ -17,8 +17,10 @@ const SpeechToIsl = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { LoadingScreen, startLoading, stopLoading } = useLoadingScreen();
 
+    const WORDS_TO_EXCLUDE = ["this", "is", "a", "an", "the"]
+
     // Initialize Gemini API
-    const genAI = new GoogleGenerativeAI('AIzaSyB-w3gyHcdI2LELCYqH2iQruk89HfWqEm0');
+    // const genAI = new GoogleGenerativeAI('AIzaSyB-w3gyHcdI2LELCYqH2iQruk89HfWqEm0');
 
     const handleConversion = async (sentence) => {
         if (!sentence.trim()) {
@@ -26,21 +28,21 @@ const SpeechToIsl = () => {
         }
 
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+            // const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
-            const prompt = `You are an expert in Indian Sign Language. Convert the English sentence given in between backticks to Indian Sign Language English using its grammar rules, such as removing verbs like 'are', 'is', 'am' etc but except only for 'thankyou' and 'goodmorning', if these two exist in the sentence then do not split them, keep these words intact without any spaces in between, in the output and the rest in Indian Sign Language grammar. \`${sentence}\`. Give only the English words without any extra characters.`;
+            // const prompt = `You are an expert in Indian Sign Language. Convert the English sentence given in between backticks to Indian Sign Language English using its grammar rules, such as removing verbs like 'are', 'is', 'am' etc but except only for 'thankyou' and 'goodmorning', if these two exist in the sentence then do not split them, keep these words intact without any spaces in between, in the output and the rest in Indian Sign Language grammar. \`${sentence}\`. Give only the English words without any extra characters.`;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
+            // const result = await model.generateContent(prompt);
+            // const response = await result.response;
 
-            // Get the text from the response
-            const text = await response.text();
-            if (!text) {
-                throw new Error('Empty response from translation');
-            }
+            // // Get the text from the response
+            // const text = await response.text();
+            // if (!text) {
+            //     throw new Error('Empty response from translation');
+            // }
 
             // Process the response
-            const words = text.trim().split(" ");
+            const words = sentence.trim().split(" ").filter((word)=> !WORDS_TO_EXCLUDE.includes(word.toLowerCase()));
             const finalWords = words.filter(word => word !== "" && word !== " ").map(word => word.toLowerCase());
 
             if (finalWords.length === 0) {

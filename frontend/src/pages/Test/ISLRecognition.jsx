@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Maximize, Minimize, RotateCcw, RefreshCw } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import * as ort from "onnxruntime-web";
 
 const ISLRecognition = () => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [session, setSession] = useState(null);
@@ -29,28 +29,11 @@ const ISLRecognition = () => {
   let handsResults = null;
 
   const LABELS = {
-    "0": "0",
-    "1": "1",
-    "2": "2",
-    "3": "3",
-    "4": "4",
-    "5": "5",
-    "6": "7",
-    "7": "8",
-    "8": "9",
-    "9": "Indian",
-    "10": "angry",
-    "11": "arrest",
-    "12": "baby",
-    "13": "brush",
-    "14": "dog",
-    "15": "food",
-    "16": "hate",
-    "17": "i",
-    "18": "love",
-    "19": "morning",
-    "20": "play",
-    "21": "you"
+    "0": "Indian",
+    "1": "food",
+    "2": "i",
+    "3": "love",
+    "4": "play"
   };
 
   // Mediapipe pose landmark indexes (used for normalization)
@@ -215,14 +198,14 @@ const ISLRecognition = () => {
   // Retry wrapper function
   const withRetry = async (fn, maxRetries = MAX_RETRIES, delay = RETRY_DELAY) => {
     let lastError;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await fn();
       } catch (error) {
         lastError = error;
         console.error(`Attempt ${attempt + 1} failed:`, error);
-        
+
         if (attempt < maxRetries) {
           console.log(`Retrying in ${delay}ms... (${attempt + 1}/${maxRetries})`);
           setRetryCount(attempt + 1);
@@ -234,7 +217,7 @@ const ISLRecognition = () => {
         }
       }
     }
-    
+
     throw lastError;
   };
 
@@ -242,14 +225,14 @@ const ISLRecognition = () => {
   const loadONNXModel = async () => {
     return withRetry(async () => {
       ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@dev/dist/";
-      
+
       const sess = await ort.InferenceSession.create(modelUrl, {
         executionProviders: ["wasm"],
         wasm: {
           path: "/onnxruntime/",
         },
       });
-      
+
       return sess;
     });
   };
@@ -262,7 +245,7 @@ const ISLRecognition = () => {
         import("https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"),
         import("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"),
       ]);
-      
+
       // Verify that the libraries loaded correctly
       if (!window.Hands || !window.Pose || !window.Camera) {
         throw new Error("MediaPipe libraries failed to load properly");
@@ -340,7 +323,7 @@ const ISLRecognition = () => {
     };
 
     requestLandscape();
-    
+
     // Listen for orientation changes
     if (typeof window !== 'undefined') {
       window.addEventListener('orientationchange', handleOrientationChange);
@@ -355,7 +338,7 @@ const ISLRecognition = () => {
         window.removeEventListener('orientationchange', handleOrientationChange);
         window.removeEventListener('resize', handleOrientationChange);
       }
-      
+
       // Unlock orientation when leaving
       if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
         screen.orientation.unlock();
@@ -401,18 +384,18 @@ const ISLRecognition = () => {
               await hands.send({ image: videoRef.current });
               await pose.send({ image: videoRef.current });
             },
-            width: typeof window !== 'undefined' && 
-                   window.innerWidth <= 768 && window.innerWidth < window.innerHeight ? 
-                   Math.min(640, window.innerHeight - 32) : // Portrait mobile: use height for width
-                   typeof window !== 'undefined' && window.innerWidth <= 768 ? 
-                   Math.min(854, window.innerWidth - 32) : // Landscape mobile: normal width
-                   videoRef.current.clientWidth, // Desktop: full width
-            height: typeof window !== 'undefined' && 
-                    window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
-                    Math.min(480, window.innerWidth - 160) : // Portrait mobile: use width for height  
-                    typeof window !== 'undefined' && window.innerWidth <= 768 ?
-                    Math.min(480, window.innerHeight - 160) : // Landscape mobile: normal height
-                    videoRef.current.clientHeight, // Desktop: full height
+            width: typeof window !== 'undefined' &&
+              window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
+              Math.min(640, window.innerHeight - 32) : // Portrait mobile: use height for width
+              typeof window !== 'undefined' && window.innerWidth <= 768 ?
+                Math.min(854, window.innerWidth - 32) : // Landscape mobile: normal width
+                videoRef.current.clientWidth, // Desktop: full width
+            height: typeof window !== 'undefined' &&
+              window.innerWidth <= 768 && window.innerWidth < window.innerHeight ?
+              Math.min(480, window.innerWidth - 160) : // Portrait mobile: use width for height  
+              typeof window !== 'undefined' && window.innerWidth <= 768 ?
+                Math.min(480, window.innerHeight - 160) : // Landscape mobile: normal height
+                videoRef.current.clientHeight, // Desktop: full height
           });
 
           hands.onResults((results) => {
@@ -451,11 +434,11 @@ const ISLRecognition = () => {
                 output.probabilities || output.probabilities || Object.values(output)[1];
 
               const predictedClassIndex = Number(outputTensor1.data[0]);
-              const predictedProb = (Number(Math.max(...outputTensor2.data))*100).toFixed(2);
+              const predictedProb = (Number(Math.max(...outputTensor2.data)) * 100).toFixed(2);
               const predictedWord = LABELS[predictedClassIndex] || "Unknown";
               setPrediction(`${predictedWord} (${predictedProb} %)`);
 
-              if (predictedWord !== "null" && predictedWord !== "Unknown" && predictedProb > 50) {
+              if (predictedWord !== "null" && predictedWord !== "Unknown" && predictedProb > 42) {
                 predictionCountRef.current[predictedWord] =
                   (predictionCountRef.current[predictedWord] || 0) + 1;
 
@@ -483,7 +466,7 @@ const ISLRecognition = () => {
 
         var checkInterval = null;
         checkInterval = setInterval(() => {
-          if (sess && handsResults && poseResults ) {
+          if (sess && handsResults && poseResults) {
             setLoading(false);
             if (checkInterval) clearInterval(checkInterval);
           }
@@ -548,21 +531,21 @@ const ISLRecognition = () => {
               <div className="absolute inset-0 border-2 border-white rounded-lg transform rotate-0 transition-transform duration-1000"></div>
               <div className="absolute inset-2 bg-white/20 rounded-sm"></div>
               <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-white rounded-full"></div>
-              
+
               {/* Rotation indicator */}
               <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
                 <div className="w-6 h-6 border-2 border-white rounded-full border-dashed animate-spin"></div>
                 <div className="absolute inset-1 bg-white rounded-full"></div>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <h3 className="text-xl font-semibold text-white">Rotate to Landscape</h3>
               <p className="text-gray-300 text-sm leading-relaxed">
                 For the best sign language recognition experience, please rotate your device to landscape mode.
               </p>
             </div>
-            
+
             <button
               onClick={() => setShowOrientationPrompt(false)}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
@@ -585,7 +568,7 @@ const ISLRecognition = () => {
                 </svg>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <h3 className="text-xl sm:text-2xl font-semibold text-red-400">Initialization Failed</h3>
               <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
@@ -597,7 +580,7 @@ const ISLRecognition = () => {
                 </p>
               )}
             </div>
-            
+
             <button
               onClick={handleManualRetry}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium mx-auto"
@@ -622,7 +605,7 @@ const ISLRecognition = () => {
                 {isRetrying ? 'Retrying...' : 'Initializing Recognition'}
               </h3>
               <p className="text-gray-300 text-sm sm:text-base px-4">
-                {isRetrying 
+                {isRetrying
                   ? `Retry attempt ${retryCount}/${MAX_RETRIES}...`
                   : 'Loading sign language recognition model and accessing camera...'
                 }
@@ -649,7 +632,7 @@ const ISLRecognition = () => {
       {/* Top navigation bar - responsive positioning and sizing */}
       <div className="absolute top-3 sm:top-6 left-3 sm:left-6 right-3 sm:right-6 flex justify-between items-center z-30">
         <button
-          onClick={() => console.log('Navigate to dashboard')}
+          onClick={() => navigate('/dash')}
           className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-black/60 backdrop-blur-md rounded-lg sm:rounded-xl hover:bg-black/80 transition-all duration-200 shadow-lg border border-white/10"
         >
           <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
@@ -672,7 +655,7 @@ const ISLRecognition = () => {
       {/* Bottom panel - responsive layout with mobile spacing adjustment */}
       <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-1/2 right-3 sm:right-auto sm:transform sm:-translate-x-1/2 z-30 sm:max-w-2xl sm:w-full">
         <div className="bg-black/40 backdrop-blur-md rounded-lg sm:rounded-xl p-2 sm:p-4 shadow-lg border border-white/5">
-          
+
           {/* Mobile layout - stacked vertically with compact spacing */}
           <div className="space-y-2 sm:hidden">
             {/* Current prediction */}

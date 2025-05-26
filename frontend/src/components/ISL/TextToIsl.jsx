@@ -13,8 +13,10 @@ const SpeechToIsl = () => {
     const [error, setError] = useState("");
     const { LoadingScreen, startLoading, stopLoading } = useLoadingScreen();
 
-    const API_KEY = 'AIzaSyCk_XPfDSVGpWOPSGEzzdWtkuPAq9gpCPE';
-    const genAI = new GoogleGenerativeAI(API_KEY);
+    const WORDS_TO_EXCLUDE = ["this", "is", "a", "an", "the"]
+
+    // const API_KEY = 'AIzaSyCk_XPfDSVGpWOPSGEzzdWtkuPAq9gpCPE';
+    // const genAI = new GoogleGenerativeAI(API_KEY);
 
     const handleConversion = async (sentence) => {
         if (!sentence.trim()) {
@@ -22,19 +24,19 @@ const SpeechToIsl = () => {
         }
 
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-            const prompt = `You are an expert in Indian Sign Language. Convert the English sentence given in between backticks to Indian Sign Language English using its grammar rules, such as removing verbs like 'are', 'is', 'am' etc but except only for 'thankyou' and 'goodmorning', if these two exist in the sentence then do not split them, keep these words intact without any spaces in between, in the output and the rest in Indian Sign Language grammar. \`${sentence}\`. Give only the English words without any extra characters.`;
+            // const prompt = `You are an expert in Indian Sign Language. Convert the English sentence given in between backticks to Indian Sign Language English using its grammar rules, such as removing verbs like 'are', 'is', 'am' etc but except only for 'thankyou' and 'goodmorning', if these two exist in the sentence then do not split them, keep these words intact without any spaces in between, in the output and the rest in Indian Sign Language grammar. \`${sentence}\`. Give only the English words without any extra characters.`;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+            // const result = await model.generateContent(prompt);
+            // const response = await result.response;
+            // const text = response.text();
 
-            if (!text) {
-                throw new Error('No response received from translation service');
-            }
+            // if (!text) {
+            //     throw new Error('No response received from translation service');
+            // }
 
-            const words = text.trim().split(" ");
+            const words = sentence.trim().split(" ").filter((word)=> !WORDS_TO_EXCLUDE.includes(word.toLowerCase()));
             const finalWords = words.filter(word => word !== "" && word !== " ").map(word => word.toLowerCase());
 
             if (finalWords.length === 0) {
